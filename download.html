@@ -1,0 +1,103 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download Post</title>
+</head>
+<body>
+     <button id="download-post-btn" onclick="downloadPost('postId')">Download</button>
+
+    <script>
+        async function downloadPost(postId) {
+            try {
+                // const response = await fetch(`https://example.com/api/posts/${postId}`)
+                 const response = await fetch(`/elitefootball/post/${postId}`)
+                
+                if (!response.ok) {
+                    alert('Post not found.')
+                    return
+                }
+
+                const post = await response.json()
+
+                // Convert post object to a string for downloading
+                const postStr = JSON.stringify(post, null, 2)
+                const blob = new Blob([postStr], { type: 'application/json' })
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url
+                a.download = `post_${postId}.json`
+                document.body.appendChild(a)
+                a.click()
+                document.body.removeChild(a)
+
+            } catch (error) {
+                console.error('Error:', error)
+                alert('An error occurred while downloading the post.')
+            }
+        }
+    </script>
+</body>
+</html>
+
+
+
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>download post</title>
+</head>
+<body>
+    <button id="download-post-btn" onclick="downloadPost('postId')">Download</button>
+
+    <script>
+        async function downloadPost(postId) {
+            try {
+                const response = await fetch(`/elitefootball/post/${postId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + sessionStorage.getItem('token')
+                    }
+                })
+
+                if (response.status === 404) {
+                    alert('session expired.')
+                    return
+                } else if (response.status === 500) {
+                    alert('Bad internet connection')
+                    return
+                }
+
+                const post = await response.json()
+                if (!post) {
+                    alert('Post not found.')
+                    return
+                }
+
+                // Convert post object to a string for downloading
+                const postStr = JSON.stringify(post, null, 2)
+                const blob = new Blob([postStr], { type: 'application/json' })
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url
+                a.download = `post_${postId}.json`
+                document.body.appendChild(a)
+                a.click()
+                document.body.removeChild(a)
+
+            } catch (error) {
+                console.error('Error:', error)
+                alert('An error occurred while downloading the post.')
+            }
+        }
+    </script>
+</body>
+</html> -->
+
+
