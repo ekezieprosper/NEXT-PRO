@@ -95,8 +95,7 @@ const DynamicEmail = (userName, otp, verificationLink) => {
                                     <p><b>${otp}</b><br>expires in 5 minutes.</p>
                                 </h3><br><br>
                             </div>
-                                <hr><p style="margin-left:2mm; font-size: 12px; color: #909090;">© elitefootball ${new Date().getFullYear()}. Connect to the real world of football </p>
-
+                                <hr><p style="margin-left:2mm; font-size: 12px; color: #909090;">© ${new Date().getFullYear()} elitefootball. 203 Muyibi Str, Lagos, Nigeria</p>
                         </td>
                     </tr>
                 </table>
