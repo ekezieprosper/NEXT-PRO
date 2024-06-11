@@ -18,7 +18,7 @@ require("./config/config")
 require("dotenv").config()
 
 
-const port = process.env.port
+const port = process.env.port || 1999
 const app = express()
 const server = http.createServer(app)
 
