@@ -35,8 +35,6 @@ const agentSchema = new mongoose.Schema({
 
     isVerified: { type: Boolean, default: false },
 
-    isAdmin: { type: Boolean, default: false },
-
     followers: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'player'

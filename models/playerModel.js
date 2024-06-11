@@ -41,10 +41,14 @@ const playerSchema = new mongoose.Schema({
          type: String,
          enum: ["CAM", "LM", "CM", "RM", "CDM"]
         },
+        attacker:{
+            type: String,
+            enum: ["LW", , "RF", "LF", "RW"]
+           }, 
         striker:{
-         type: String,
-         enum: ["CF", "LW", "ST", "RF", "LF", "RW" ]
-        }
+            type: String,
+            enum: ["CF", "ST"]
+           }, 
      },
      
     relationship_status: {
@@ -54,7 +58,6 @@ const playerSchema = new mongoose.Schema({
 
     isVerified: { type: Boolean, default: false },
 
-    isAdmin: { type: Boolean, default: false },
 
     followers: [{
         type: mongoose.Schema.Types.ObjectId,

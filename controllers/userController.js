@@ -488,105 +488,10 @@ exports.logOut = async (req, res) => {
     }
 }
 
-exports.isAdmin = async (req, res) => {
-    try {
-        const id = req.params.id
-
-        //  check if user is found in the database
-        let user = await agentModel.findById(id)
-        if (!user) {
-            user = await playerModel.findById(id)
-        }
-
-        if (!user) {
-            return res.status(404).json({
-                error: "User not found"
-            })
-        }
-
-        // check if user is already an admin
-        if (user.isAdmin) {
-            return res.json({
-                message: "You're already an admin."
-            })
-
-        } else {
-            user.isAdmin = true
-            await user.save()
-
-            res.status(200).json({
-                message: `${user.userName} is now an Admin`
-            })
-        }
-
-    } catch (error) {
-        res.status(500).json({
-            error: "Internal server error"
-        })
-    }
-}
-
-
-exports.getAllUsers = async (req, res) => {
-    try {
-        const id = req.params.id
-
-        // Find the user and check if they are an admin
-        let user = await agentModel.findById(id) || await playerModel.findById(id)
-        if (!user.isAdmin) {
-            return res.status(403).json({
-                error: "Unauthorized to perform this action."
-            })
-        }
-
-        let {limit, page} = req.query
-
-        // Set default values for limit and page if not provided
-        limit = parseInt(limit) || 10
-        page = parseInt(page) || 1
-
-        // Retrieve all users
-        const players = await playerModel.find()
-        const agents = await agentModel.find()
-
-        // Combine users and sort if needed
-        const allUsers = [...players, ...agents]
-
-        // Calculate the starting index and ending index for pagination
-        const startIndex = (page - 1) * limit
-        const endIndex = page * limit
-
-        // Slice the combined user array to get the users for the current page
-        const paginatedUsers = allUsers.slice(startIndex, endIndex)
-
-        // Check if there are more pages
-        const totalUsers = allUsers.length
-        const totalPages = Math.ceil(totalUsers / limit)
-        const hasNextPage = endIndex < totalUsers
-
-        return res.status(200).json({
-            message: `Page ${page} of ${totalPages}`,
-            total_numbers_of_users: paginatedUsers.length,
-            users: paginatedUsers,
-            nextPage: hasNextPage ? page + 1 : null
-        })
-    } catch (error) {
-        res.status(500).json({
-            error: "Internal server error"
-        })
-    }
-}
-
-
-
 
 exports.forgotPassword = async (req, res) => {
     try {
-        const id = req.params.id
-
         const {email} = req.body
-
-        // Basic email validation
         if (!email || !email.includes('@')) {
             return res.status(400).json({
                 error: 'Invalid email address'
