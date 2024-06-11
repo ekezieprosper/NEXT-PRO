@@ -19,7 +19,7 @@ class NotificationController extends EventEmitter {
     ws.on('message', async (message) => {
       try {
         const data = JSON.parse(message)
-        
+
         if (data.type === 'userId') {
           this.clients[data.userId] = ws
           ws.userId = data.userId
@@ -32,15 +32,18 @@ class NotificationController extends EventEmitter {
             await this.saveNotification('new_post_notification', data.data)
             this.broadcast({ type: 'new_post_notification', data: data.data })
             break
-            case 'new_story':
-              await this.saveNotification('new_story_notification', data.data)
-              this.broadcast({ type: 'new_story_notification', data: data.data })
-              break
+          case 'new_story':
+            await this.saveNotification('new_story_notification', data.data)
+            this.broadcast({ type: 'new_story_notification', data: data.data })
+            break
           case 'new_like':
           case 'new_comment':
           case 'follow':
           case 'unfollow':
             await this.handleUserActionNotification(data.type, data.data)
+            break
+          case 'new_chat_message':
+            await this.handleNewChatMessage(data.data)
             break
           default:
             console.warn(`Unhandled message type: ${data.type}`)
@@ -75,6 +78,29 @@ class NotificationController extends EventEmitter {
       this.sendToUser(user._id.toString(), { type: `${actionType}_notification`, data })
     } catch (error) {
       console.error('Error handling user action notification:', error)
+    }
+  }
+
+  async handleNewChatMessage(data) {
+    try {
+      // Assuming data contains information about the message and the recipient
+      const { userId, message } = data
+      
+      // Find the user by ID
+      let user = await playerModel.findOne({ _id: userId }) || await agentModel.findOne({ _id: userId })
+
+      if (!user) {
+        console.error('User not found.')
+        return
+      }
+
+      // Save the notification
+      await this.saveNotification('new_chat_message_notification', data)
+
+      // Send the notification to the user
+      this.sendToUser(userId.toString(), { type: 'new_chat_message_notification', data: message })
+    } catch (error) {
+      console.error('Error handling new chat message notification:', error)
     }
   }
 

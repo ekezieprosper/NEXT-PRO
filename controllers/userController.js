@@ -377,28 +377,26 @@ exports.verify = async (req, res) => {
 
 exports.logIn = async (req, res) => {
     try {
-        const id = req.params.id
-
-        const {userName, email, phoneNumber, password} = req.body
+        const {userName, password} = req.body
 
         // Check if at least one identifier is provided
-        if (!userName && !email && !phoneNumber) {
+        if (!userName) {
             return res.status(400).json({
-                error: "One identifier (userName, email, or phoneNumber) is required."
+                error: "Input username"
             })
         }
 
         // Check if password is provided
         if (!password) {
             return res.status(400).json({
-                error: "Password is required."
+                error: "input password"
             })
         }
 
         // Search for the user based on userName, email, or phoneNumber
-        let user = await agentModel.findOne({_id: id, $or: [{userName}, {email}, {phoneNumber}] }).limit(1)
+        let user = await agentModel.findOne({userName}).limit(1)
         if (!user) {
-            user = await playerModel.findOne({_id: id, $or: [{userName}, {email}, {phoneNumber}] }).limit(1)
+            user = await playerModel.findOne({userName}).limit(1)
         }
 
 

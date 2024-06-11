@@ -3,8 +3,6 @@ const cloudinary = require("../media/cloudinary")
 const playerModel = require("../models/playerModel")
 const agentModel = require("../models/agentModel")
 const emoji = require('node-emoji')
-const path = require('path')
-const fs = require('fs')
 
 
 exports.createPost = async (req, res) => {
