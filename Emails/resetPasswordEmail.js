@@ -1,4 +1,4 @@
-const DynamicEmail = (userName, otp, verificationLink) => {
+const resetFunc = (userName, otp, verificationLink) => {
     return `
     <!DOCTYPE html>
     <html lang="en">
@@ -83,15 +83,15 @@ const DynamicEmail = (userName, otp, verificationLink) => {
                         <td style="padding: 2em 0; text-align: center; background-color: #ffffff;" class="padding-mobile">
                             <img src="https://res.cloudinary.com/dqjixyz71/image/upload/v1714691315/jmf6xunogjxcydxevfue.jpg" alt="Elite Football Logo" width="80" style="width: 80px; max-width: 80px; height: auto; margin: auto; display: block; border-radius: 50%;">   
                             <div style="text-align: left;">
-                                <h1 style="font-size: 20px; font-weight: 350; margin: 10px 0;">Hey, <b style="color: green; font-weight: 350">${userName}</b>!</h1><br>
+                                <h1 style="font-size: 20px; font-weight: 350; margin: 10px 0;">Hi, <b style="color: green; font-weight: 350">${userName}</b>!</h1><br>
                             </div>
 
-                             <div style="text-align: left;">
-                            <p style="text-align: left; font-size: 16px; font-weight: 320; margin-bottom: 0; color: black;">Click on this link below to verify your account.</p><a href="${verificationLink}" class="btn btn-primary" style="padding: 10px 20px; display: inline-block; border-radius: 3px; margin-top: 20px; background: green; color: white; text-decoration: none;">Verify your account</a>
+                            <div style="text-align: left;">
+                            <p style="text-align: left; font-size: 16px; font-weight: 300; margin-bottom: 0; color: black;">We received a request to reset your password.<br>You can directly reset your password by clicking on the link below.</p><a href="${verificationLink}" class="btn btn-primary" style="padding: 10px 20px; display: inline-block; border-radius: 3px; margin-top: 20px; background: green; color: white; text-decoration: none;">reset password</a>
                             </div>
                             
-                            <div style="text-align: left;">
-                                <h3 style="font-size: 18px; font-weight: 300; margin-bottom: 0; color: #333;">
+                             <div style="text-align: left;">
+                                <h3 style="font-size: 18px; font-weight: 320; margin-bottom: 0; color: #333;">
                                     <p>otp code: <b>${otp}</b></p>
                                 </h3><br>
                             </div>
@@ -103,7 +103,7 @@ const DynamicEmail = (userName, otp, verificationLink) => {
         </center>
     </body>
     </html>
-    `
+    `;
 }
 
-module.exports = DynamicEmail
+module.exports = {resetFunc};

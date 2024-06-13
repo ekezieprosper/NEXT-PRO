@@ -1,4 +1,4 @@
-const resetFunc = (userName, otp, verificationLink) => {
+const resendResetFunc = (userName, otp, verificationLink) => {
     return `
     <!DOCTYPE html>
     <html lang="en">
@@ -92,8 +92,8 @@ const resetFunc = (userName, otp, verificationLink) => {
                             
                              <div style="text-align: left;">
                                 <h3 style="font-size: 18px; font-weight: 320; margin-bottom: 0; color: #333;">
-                                    <p>use reset code:<br><b>${otp}</b></p>
-                                </h3><br><br>
+                                    <p>otp code: <b>${otp}</b></p>
+                                </h3><br>
                             </div>
                                 <hr><p style="margin-left:2mm; font-size: 12px; color: #909090;">© ${new Date().getFullYear()} elitefootball. 203 Muyibi Str, Lagos, Nigeria</p>
                         </td>
@@ -106,4 +106,4 @@ const resetFunc = (userName, otp, verificationLink) => {
     `;
 }
 
-module.exports = {resetFunc};
+module.exports = {resendResetFunc};

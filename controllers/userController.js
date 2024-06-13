@@ -2,14 +2,15 @@ const playerModel = require("../models/playerModel")
 const agentModel = require("../models/agentModel")
 const OTPModel = require('../models/otpModel')
 const subscriptionModel = require("../models/subscriptionModel")
+const cloudinary = require("../media/cloudinary")
 const bcrypt = require("bcrypt")
-require("dotenv").config()
 const jwt = require("jsonwebtoken")
+require("dotenv").config()
 const DynamicEmail = require("../Emails/emailIndex")
 const sendEmail = require("../Emails/email")
-const {resetFunc} = require("../Emails/resthtml")
-const cloudinary = require("../media/cloudinary")
-const resendOtpEmail = require("../Emails/resendOtp")
+const {resetFunc} = require("../Emails/resetPasswordEmail")
+const {resendResetFunc} = require("../Emails/resendResetEmail")
+const resendOtpEmail = require("../Emails/resendVerificationOtp")
 
 
 exports.home = (req, res) => {
@@ -210,7 +211,8 @@ const sendOtp = async (agent, player, otp) => {
         const userName = agent ? agent.userName : player.userName
         const email = agent ? agent.email : player.email
         const text = `Verification code ${otp}`
-        const verificationLink = `https://elitefootball/verify/${agent?._id||player?._id}`
+        const verificationLink = `https://elitefootball.onrender.com/verify/${agent?._id||player?._id}`
+
         const html = DynamicEmail(userName, otp, verificationLink)
         await sendEmail({email, subject, text, html})
 
@@ -271,7 +273,8 @@ exports.resendOTP = async (req, res) => {
         // Send the OTP to the agent's email
         const subject = "Email Verification"
         const text = `Verification code ${otp}`
-        const html = resendOtpEmail(user.userName, otp)
+        const verificationLink = `https://elitefootball.onrender.com/verify/${user._id}`
+        const html = resendOtpEmail(user.userName, otp, verificationLink)
         await sendEmail({email: user.email, subject, text, html})
 
        
@@ -492,55 +495,99 @@ exports.logOut = async (req, res) => {
 exports.forgotPassword = async (req, res) => {
     try {
         const {email} = req.body
+        
+        // Validate email
         if (!email || !email.includes('@')) {
             return res.status(400).json({
                 error: 'Invalid email address'
             })
         }
-        const agent = await agentModel.findById(id)
-        const player = await playerModel.findById(id)
 
-        const checkUser = agent || player
+        // Find user by email in either agent or player collection
+        const foundUser = await agentModel.findOne({email}) || await playerModel.findOne({email})
 
-
-    let Email = await agentModel.findOne({email}) || await playerModel.findOne({email})
-
-        if (!Email) {
+        if (!foundUser) {
             return res.status(404).json({
-                error: `email not found`
+                error: 'User not found'
             })
-        } else {
-            const otp = `${Math.floor(Math.random() * 1000000)}`.padStart(6, '0')
+        }
 
-            // hash OTP then save it to the database
-            const saltotp = bcrypt.genSaltSync(10)
-            const hashotp = bcrypt.hashSync(otp, saltotp)    
+        // Generate OTP
+        const otp = `${Math.floor(Math.random() * 1000000)}`.padStart(6, '0')
 
-            // Send the OTP to the user's email
-            const subject = "Reset Password"
-        const verificationLink = `https://elitefootball/reset_password/${checkUser._id}`
+        // Hash OTP
+        const salt = bcrypt.genSaltSync(10)
+        const hashotp = bcrypt.hashSync(otp, salt)
 
-            const html = resetFunc(checkUser.userName, otp, verificationLink)
-            await sendEmail({email: checkUser.email, subject, html})
-
-                 
-        // Save the hashed OTP in the OTPModel for verification
+        // Save hashed OTP to OTPModel
         await OTPModel.create({
-            agentId:agent ? id :undefined,
-            playerId:player? id :undefined,
+            agentId: foundUser instanceof agentModel ? foundUser._id : undefined,
+            playerId: foundUser instanceof playerModel ? foundUser._id : undefined,
             otp: hashotp
         })
 
-            res.status(200).json({
-                message: `An otp code has been sent to your email.`,
-            })
-        }
+        // Send email with OTP and verification link
+        const subject = 'Reset Password'
+        const verificationLink = `https://elitefootball.onrender.com/reset_password/${foundUser._id}`
+        const html = resetFunc(foundUser.userName, otp, verificationLink)
+        await sendEmail({ email: foundUser.email, subject, html })
+
+        // Respond with success message
+        res.status(200).json({
+            message: 'An OTP code has been sent to your email.'
+        })
     } catch (err) {
         res.status(500).json({
-            error: "Internal server error"
+            error: 'Internal server error'
         })
     }
 }
+
+
+ exports.ResndResetOtpCode = async (req, res) => {
+        try {
+            const id = req.params.id
+       
+            const agent = await agentModel.findById(id)
+            const player = await playerModel.findById(id)
+            let users = player || agent
+
+            if(!users){
+                return res.status(404).json({
+                    error: "user not found"
+                })
+            }
+        
+            const otp = `${Math.floor(Math.random() * 1000000)}`.padStart(6, '0')
+    
+            // hash OTP then save it to the database
+            const saltotp = bcrypt.genSaltSync(10)
+            const hashotp = bcrypt.hashSync(otp, saltotp)    
+    
+            // Send the OTP to the user's email
+                const subject = "Reset Password"
+            const verificationLink = `https://elitefootball.onrender.com/reset_password/${users._id}`
+    
+                const html = resendResetFunc(users.userName, otp, verificationLink)
+                await sendEmail({email: users.email, subject, html})
+    
+                     
+            // Save the hashed OTP in the OTPModel for verification
+            await OTPModel.create({
+                agentId:agent ? id :undefined,
+                playerId:player? id :undefined,
+                otp: hashotp
+            })
+    
+                res.status(200).json({
+                    message: `An otp code has been resent to your email.`,
+                })          
+        } catch (err) {
+            res.status(500).json({
+                error: 'Internal server error'
+            })
+        }
+    }
 
 
 exports.verifyPasswordOTP = async (req, res) => {
