@@ -14,7 +14,3 @@ router.delete('/delete_comment/:commentId',authenticate, deleteCommentOnPost)
 
 
 module.exports = router
-
-
-
-

@@ -531,11 +531,10 @@ exports.forwardMessage = async (req, res) => {
     await Promise.all(forwardMessages)
 
     res.status(200).json({
-      success: "Message forwarded to recipients."
+      success: `Message forwarded to ${forwardTo}.`
     })
 
   } catch (error) {
-    console.error(error)
     return res.status(500).json({
       error: "Internal server error. Please try again later."
     })
@@ -741,7 +740,6 @@ exports.deleteMessage = async (req, res) => {
     })
 
   } catch (err) {
-    console.error(err) 
     res.status(500).json({
       error: "Internal server error"
     })

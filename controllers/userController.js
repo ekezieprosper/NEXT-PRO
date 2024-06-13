@@ -1455,7 +1455,7 @@ exports.deleteAccount = async (req, res) => {
         }
 
         res.status(200).json({
-            message: "Account deleted successfully"
+            message: "deleted successfully"
         })
 
     } catch (error) {

@@ -113,12 +113,7 @@ exports.getstory = async (req, res) => {
             await story.save()
         }
 
-        res.status(200).json({
-            story,
-            likes: story.likes.length,
-            views: story.views.length,
-            comments: story.comments
-        })
+        res.status(200).json(story)
 
     } catch (error) {
         res.status(500).json({

@@ -4,11 +4,12 @@ const playerModel = require('../models/playerModel')
 const agentModel = require('../models/agentModel')
 const EventEmitter = require('events')
 
-class NotificationController extends EventEmitter {
+class notificationController extends EventEmitter {
   constructor(server) {
     super()
     this.wss = new WebSocket.Server({ server })
     this.clients = {}
+    global.notifications = new Map()
 
     this.wss.on('connection', (ws) => {
       this.handleConnection(ws)
@@ -67,13 +68,7 @@ class NotificationController extends EventEmitter {
 
   async handleUserActionNotification(actionType, data) {
     try {
-      let user = await playerModel.findOne({ _id: data.userId }) || await agentModel.findOne({ _id: data.userId })
-
-      if (!user) {
-        console.error('User not found.')
-        return
-      }
-
+      const user = await playerModel.findOne({ _id: data.userId }) || await agentModel.findOne({ _id: data.userId })
       await this.saveNotification(`${actionType}_notification`, data)
       this.sendToUser(user._id.toString(), { type: `${actionType}_notification`, data })
     } catch (error) {
@@ -83,21 +78,9 @@ class NotificationController extends EventEmitter {
 
   async handleNewChatMessage(data) {
     try {
-      // Assuming data contains information about the message and the recipient
       const { userId, message } = data
-      
-      // Find the user by ID
-      let user = await playerModel.findOne({ _id: userId }) || await agentModel.findOne({ _id: userId })
-
-      if (!user) {
-        console.error('User not found.')
-        return
-      }
-
-      // Save the notification
+      const user = await playerModel.findOne({ _id: userId }) || await agentModel.findOne({ _id: userId })
       await this.saveNotification('new_chat_message_notification', data)
-
-      // Send the notification to the user
       this.sendToUser(userId.toString(), { type: 'new_chat_message_notification', data: message })
     } catch (error) {
       console.error('Error handling new chat message notification:', error)
@@ -122,22 +105,29 @@ class NotificationController extends EventEmitter {
       ws.send(JSON.stringify(message))
     } else {
       console.warn(`WebSocket not open for user ${userId}`)
-      // Store the notification if the user is not online
       if (!global.notifications.has(userId)) {
         global.notifications.set(userId, [])
       }
       global.notifications.get(userId).push(message)
     }
   }
+  
 
-  // Additional method to send notification to all online users
-  sendToAllOnlineUsers(message) {
+  broadcast(message) {
     Object.values(this.clients).forEach(ws => {
       if (ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify(message))
       }
     })
   }
+  
+
+  sendToClient(ws, message) {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify(message))
+    }
+  }
+  
 }
 
-module.exports = NotificationController
+module.exports = notificationController
