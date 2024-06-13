@@ -242,9 +242,9 @@ exports.sendMessage = async (req, res) => {
       })
     }
 
-    if (chat.block.includes(id)) {
+    if (chat.block.includes(chatId)) {
       return res.status(400).json({
-        error: `you've been blocked`
+        error: `This chat is blocked. Therefore, you can't send message`
       })
     }
 
@@ -313,9 +313,9 @@ if (!chat.members.includes(id) ) {
   })
 }
 
-if (chat.block.includes(id)) {
+if (chat.block.includes(chatId)) {
   return res.status(400).json({
-    error: `you've been blocked`
+    error: `This chat is blocked. Therefore, you can't send vioce note`
   })
 }
 
@@ -467,7 +467,6 @@ exports.reactOnChat = async (req, res) => {
     await message.save()
 
     res.status(200).json({
-      message: 'Reaction updated successfully',
       reactions: message.reactions
     })
 
@@ -587,7 +586,7 @@ exports.getChatmessage = async (req, res) => {
 exports.blockChat = async (req, res) => {
   try {
     const id = req.user.userId
-    const {chatId, friendId} = req.body
+    const {chatId} = req.body
 
     // Check if the chat exists
     const chat = await chatModel.findById(chatId)
@@ -597,36 +596,26 @@ exports.blockChat = async (req, res) => {
       })
     }
 
-    // Fetch user from database
-    let user = await playerModel.findById(friendId) || await agentModel.findById(friendId)
-    if (!user) {
-      return res.status(404).json({
-        error: "User not found"
-      })
-    }
-    const userName = user.userName
-
-    // Check if both users are in the chat
-    const inChat = chat.members.includes(id) && chat.members.includes(friendId)
-    if (!inChat) {
+    // Check if the user is a member of the chat
+    if (!chat.members.includes(id)) {
       return res.status(400).json({
-        error: "Both users must be in the chat"
+        error: "You are not a member of this chat"
       })
     }
 
-    // Check if the user is already blocked
-    if (chat.block.includes(friendId)) {
+    // Check if the chat is already blocked
+    if (chat.block.includes(chatId)) {
       return res.status(200).json({
-        message: `${userName} is already blocked`
+        message: "Chat is already blocked"
       })
     }
 
-    // Block the user
-    chat.block.push(friendId)
+    // Block the chat
+    chat.block.push(chatId)
     await chat.save()
 
     return res.status(200).json({
-      message: `You've blocked ${userName}`
+      message: "You've blocked this account"
     })
 
   } catch (error) {
@@ -640,7 +629,7 @@ exports.blockChat = async (req, res) => {
 exports.unblockChat = async (req, res) => {
   try {
     const id = req.user.userId
-    const {chatId, friendId} = req.body
+    const {chatId} = req.body
 
     // Check if the chat exists
     const chat = await chatModel.findById(chatId)
@@ -650,38 +639,27 @@ exports.unblockChat = async (req, res) => {
       })
     }
 
-    // Fetch user from database
-    let user = await playerModel.findById(friendId) || await agentModel.findById(friendId)
-    if (!user) {
-      return res.status(404).json({
-        error: "User not found"
-      })
-    }
-    const userName = user.userName
-
-    // Check if both users are in the chat
-    const inChat = chat.members.includes(id) && chat.members.includes(friendId)
-    if (!inChat) {
+    // Check if the user is a member of the chat
+    if (!chat.members.includes(id)) {
       return res.status(400).json({
-        error: "Both users must be in the chat"
+        error: "You are not a member of this chat"
       })
     }
 
-    // Check if the user is actually blocked
-    if (!chat.block.includes(friendId)) {
+    // Check if the chat is already unblocked
+    if (!chat.block.includes(chatId)) {
       return res.status(200).json({
-        message: `${userName} is not blocked`
+        message: "Chat is not blocked"
       })
     }
 
-    // Unblock the user
-    chat.block = chat.block.filter(blockedId => blockedId.toString() !== friendId)
+    // Unblock the chat
+    chat.block = chat.block.filter(blockedId => blockedId.toString() !== chatId.toString())
     await chat.save()
 
     return res.status(200).json({
-      message: `You've unblocked ${userName}`
+      message: "Unblocked"
     })
-
   } catch (error) {
     return res.status(500).json({
       error: "Internal server error"
