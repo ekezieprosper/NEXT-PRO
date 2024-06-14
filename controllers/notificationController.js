@@ -9,7 +9,7 @@ class notificationController extends EventEmitter {
     super()
     this.wss = new WebSocket.Server({ server })
     this.clients = {}
-    global.notifications = new Map()
+    this.notifications = new Map()
 
     this.wss.on('connection', (ws) => {
       this.handleConnection(ws)
@@ -68,7 +68,7 @@ class notificationController extends EventEmitter {
 
   async handleUserActionNotification(actionType, data) {
     try {
-      const user = await playerModel.findOne({ _id: data.userId }) || await agentModel.findOne({ _id: data.userId })
+      const user = await playerModel.findById(data.userId) || await agentModel.findById(data.userId)
       await this.saveNotification(`${actionType}_notification`, data)
       this.sendToUser(user._id.toString(), { type: `${actionType}_notification`, data })
     } catch (error) {
@@ -79,7 +79,6 @@ class notificationController extends EventEmitter {
   async handleNewChatMessage(data) {
     try {
       const { userId, message } = data
-      const user = await playerModel.findOne({ _id: userId }) || await agentModel.findOne({ _id: userId })
       await this.saveNotification('new_chat_message_notification', data)
       this.sendToUser(userId.toString(), { type: 'new_chat_message_notification', data: message })
     } catch (error) {
@@ -89,10 +88,7 @@ class notificationController extends EventEmitter {
 
   async saveNotification(type, data) {
     try {
-      const notification = new Notification({
-        type: type,
-        data: data,
-      })
+      const notification = new Notification({ type, data })
       await notification.save()
     } catch (error) {
       console.error('Error saving notification:', error)
@@ -105,13 +101,12 @@ class notificationController extends EventEmitter {
       ws.send(JSON.stringify(message))
     } else {
       console.warn(`WebSocket not open for user ${userId}`)
-      if (!global.notifications.has(userId)) {
-        global.notifications.set(userId, [])
+      if (!this.notifications.has(userId)) {
+        this.notifications.set(userId, [])
       }
-      global.notifications.get(userId).push(message)
+      this.notifications.get(userId).push(message)
     }
   }
-  
 
   broadcast(message) {
     Object.values(this.clients).forEach(ws => {
@@ -120,14 +115,12 @@ class notificationController extends EventEmitter {
       }
     })
   }
-  
 
   sendToClient(ws, message) {
     if (ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify(message))
     }
   }
-  
 }
 
 module.exports = notificationController

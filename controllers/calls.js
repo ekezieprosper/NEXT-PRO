@@ -1,7 +1,5 @@
 const socketIO = require('socket.io')
 const chatModel = require("../models/chatModel")
-const playerModel = require("../models/playerModel")
-const agentModel = require("../models/agentModel")
 const { RTCPeerConnection, RTCSessionDescription, RTCIceCandidate } = require('wrtc')
 
 class Calls {
@@ -12,11 +10,7 @@ class Calls {
     this.io.on('connection', (socket) => {
       console.log('New client connected:', socket.id)
 
-      socket.on('disconnect', () => {
-        console.log('Client disconnected:', socket.id)
-        this.handleDisconnect(socket)
-      })
-
+      socket.on('disconnect', () => this.handleDisconnect(socket))
       socket.on('offer', (data) => this.handleOffer(socket, data))
       socket.on('answer', (data) => this.handleAnswer(socket, data))
       socket.on('candidate', (data) => this.handleCandidate(socket, data))
@@ -40,20 +34,7 @@ class Calls {
 
       peerConnection.ontrack = (event) => {
         console.log('Received track:', event.streams[0])
-        if (this.isGroupChat(chatId)) {
-          this.io.emit('remoteStream', { id: socket.id, stream: event.streams[0] })
-        } else {
-          this.getUserSocketId(chatId).then(targetSocketId => {
-            if (targetSocketId) {
-              this.io.to(targetSocketId).emit('remoteStream', { id: socket.id, stream: event.streams[0] })
-            } else {
-              socket.emit('error', { error: 'User not found in chat' })
-            }
-          }).catch(error => {
-            console.error('Error getting user socket ID:', error)
-            socket.emit('error', { error: 'Failed to get user socket ID' })
-          })
-        }
+        this.handleTrack(socket, chatId, event.streams[0])
       }
 
       await peerConnection.setRemoteDescription(new RTCSessionDescription(offer))
@@ -100,6 +81,23 @@ class Calls {
     }
   }
 
+  handleTrack(socket, chatId, stream) {
+    if (this.isGroupChat(chatId)) {
+      this.io.emit('remoteStream', { id: socket.id, stream })
+    } else {
+      this.getUserSocketId(chatId).then(targetSocketId => {
+        if (targetSocketId) {
+          this.io.to(targetSocketId).emit('remoteStream', { id: socket.id, stream })
+        } else {
+          socket.emit('error', { error: 'User not found in chat' })
+        }
+      }).catch(error => {
+        console.error('Error getting user socket ID:', error)
+        socket.emit('error', { error: 'Failed to get user socket ID' })
+      })
+    }
+  }
+
   handleDisconnect(socket) {
     const peerConnection = this.peerConnections.get(socket.id)
     if (peerConnection) {
@@ -132,53 +130,6 @@ class Calls {
       throw new Error('Failed to get user socket ID')
     }
   }
-
-  async handleUserJoin(chatId, _id) {
-    try {
-      let user = await playerModel.findById(_id)
-      if (!user) {
-        user = await agentModel.findById(_id)
-      }
-
-      if (!user) {
-        console.error('User not found')
-        return
-      }
-
-      if (this.isGroupChat(chatId)) {
-        const userSocketId = await this.getUserSocketId(chatId)
-        if (userSocketId) {
-          this.io.to(userSocketId).emit('user_joined', { user, chatId })
-        }
-      }
-    } catch (error) {
-      console.error('Error handling user join:', error)
-    }
-  }
-
-  async handleUserLeave(chatId, _id) {
-    try {
-      let user = await playerModel.findById(_id)
-      if (!user) {
-        user = await agentModel.findById(_id)
-      }
-
-      if (!user) {
-        console.error('User not found')
-        return
-      }
-
-      if (this.isGroupChat(chatId)) {
-        const userSocketId = await this.getUserSocketId(chatId)
-        if (userSocketId) {
-          this.io.to(userSocketId).emit('user_left', { user, chatId })
-        }
-      }
-    } catch (error) {
-      console.error('Error handling user leave:', error)
-    }
-  }
-
 }
 
 module.exports = Calls

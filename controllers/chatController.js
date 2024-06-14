@@ -6,12 +6,10 @@ const cloudinary = require("../media/cloudinary")
 const emoji = require('node-emoji')
 const streamifier = require('streamifier')
 
-
-
 exports.startChat = async (req, res) => {
   try {
     const id = req.user.userId
-    const { friendId } = req.body
+    const {friendId} = req.body
 
     // check if the user exist
     let user = await playerModel.findById(friendId) || await agentModel.findById(friendId)
@@ -21,15 +19,15 @@ exports.startChat = async (req, res) => {
       })
     }
 
-    // Check if a chat with both id and friendId already exists
-    const existingChat = await chatModel.findOne({
-      members: { $all: [id, friendId] }
-    })
-    if (existingChat) {
-      return res.status(400).json({
-        error: `You already have an existing chat with ${user.userName}`
-      })
-    }
+    // // Check if a chat with both id and friendId already exists
+    // const existingChat = await chatModel.findOne({
+    //   members: { $all: [id, friendId] }
+    // })
+    // if (existingChat) {
+    //   return res.status(400).json({
+    //     error: `You already have an existing chat with ${user.userName}`
+    //   })
+    // }
 
     const newChat = await chatModel.create({
       members: [id, friendId]
@@ -57,58 +55,48 @@ exports.startChat = async (req, res) => {
 }
 
 
+
 exports.createGroupChat = async (req, res) => {
   try {
     const id = req.user.userId
-    const { groupName, membersId } = req.body
+    const {groupName, membersId} = req.body
 
-    let user = await playerModel.findById(id) || await agentModel.findById(id)
-
-    // Check if groupName is provided and is a non-empty string
     if (!groupName || typeof groupName !== 'string') {
-      return res.status(400).json({
-        error: "Group name is required"
-      })
+      return res.status(400).json({ error: "Group name is required" })
     }
 
-    // Check if membersId is an array
     if (!Array.isArray(membersId)) {
-      return res.status(400).json({
+      return res.status(400).json({ 
         error: "MembersId should be an array"
-      })
+       })
     }
 
     if (membersId.includes(id)) {
-     return res.status(401).json({
-       message: "can not input your id in the membersId"
+      return res.status(401).json({
+         error: "Cannot include your own ID in the membersId" 
       })
     }
 
-    // Include the creatorId in the members array
     const members = [id, ...membersId]
 
-    // Create group chat with creatorId and membersId
     const newGroupChat = await chatModel.create({
-      groupName: groupName,
-      members: members,
+      groupName,
+      members,
       admin: id,
-      creator: id
+      creator: id,
     })
 
-    // Return the newly created group chat
     res.status(201).json({
       message: `${user.userName} created group "${groupName}"`,
       id: newGroupChat._id,
-      group_name: newGroupChat.groupName,
+      groupName: newGroupChat.groupName,
       members: newGroupChat.members,
       admin: newGroupChat.admin,
-      createdAt: newGroupChat.time
-
+      createdAt: newGroupChat.createdAt,
     })
-
   } catch (error) {
-    res.status(500).json({
-      error: "Internal server error"
+    res.status(500).json({ 
+      error: "Internal server error" 
     })
   }
 }
@@ -117,69 +105,43 @@ exports.createGroupChat = async (req, res) => {
 exports.createGroupImage = async (req, res) => {
   try {
     const id = req.user.userId
+    const {groupId} = req.body
 
-    // Check if user ID exists
-    if (!id) {
-      return res.status(404).json({
-        error: "Session expired. Please log in."
-      })
-    }
-
-    const groupId = req.body.groupId
     const group = await chatModel.findById(groupId)
-
-    // Check if the chat exists and if the user is a member
     if (!group) {
-      return res.status(404).json({
-        error: "Group chat not found."
+      return res.status(404).json({ 
+        error: "Group chat not found." 
       })
     }
 
     if (!group.members.includes(id)) {
-      return res.status(400).json({
-        error: "You are not a member of this group."
+      return res.status(400).json({ 
+        error: "You are not a member of this group." 
       })
     }
 
-    // Check if a file is uploaded
     if (!req.file) {
       return res.status(400).json({
-        error: "No file uploaded."
-      })
+         error: "No file uploaded." 
+        })
     }
 
-    const imageFile = req.file.path
-
-    // Upload image to Cloudinary
-    const result = await cloudinary.uploader.upload(imageFile)
-
+    const result = await cloudinary.uploader.upload(req.file.path)
     if (!result.secure_url) {
       return res.status(500).json({
-        error: "Failed to upload image to Cloudinary."
-      })
+         error: "Failed to upload image to Cloudinary." 
+        })
     }
 
-    // Update the group chat with the new image URL
-    const updateGroup = await chatModel.findByIdAndUpdate(
-      groupId,
-      { groupImage: result.secure_url },
-      {new: true}
-    )
+    group.groupImage = result.secure_url
+    await group.save()
 
-    if (!updateGroup) {
-      return res.status(404).json({
-        error: "Group chat not found."
-      })
-    }
-
-    // Respond with success
     res.status(200).json({
-      group: updateGroup.groupImage
-    })
-
+       groupImage: group.groupImage 
+      })
   } catch (error) {
-    res.status(500).json({
-      error: "Internal server error"
+    res.status(500).json({ 
+      error: "Internal server error" 
     })
   }
 }
@@ -189,29 +151,12 @@ exports.getChat = async (req, res) => {
   try {
     const id = req.user.userId
 
-    if (!id) {
-      return res.status(404).json({
-        error: "session expired. Login"
-      })
-    }
-
-    const chats = await chatModel.find({
-      members: { $in: [id] }
-    })
-
-    // Check if the user is a member in each chat
-    const isMember = chats.every(chat => chat.members.includes(id))
-
-    if (!isMember) {
-      return res.status(400).json(null)
-    }
-
+    const chats = await chatModel.find({ members: id })
     res.status(200).json(chats)
-
   } catch (error) {
     res.status(500).json({
-      error: "Internal server error"
-    })
+       error: "Internal server error" 
+      })
   }
 }
 
@@ -244,7 +189,7 @@ exports.sendMessage = async (req, res) => {
 
     if (chat.block.includes(chatId)) {
       return res.status(400).json({
-        error: `This chat is blocked. Therefore, you can't send message`
+        error: `This chat is blocked.You can't send message`
       })
     }
 
@@ -361,42 +306,35 @@ if (chat.block.includes(chatId)) {
   }
 }
 
-
 exports.editMessage = async (req, res) => {
   try {
     const id = req.user.userId
-    if (!id) {
-      return res.status(404).json({
-        error: "session expired.Login"
-      })
-    }
     const {messageId, newText} = req.body
 
-    const edited = await messageModel.findById(messageId)
-    if (!edited) {
+    const message = await messageModel.findById(messageId)
+    if (!message) {
       return res.status(404).json({
-        error: 'Message not found'
-      })
+         error: "Message not found"
+       })
     }
 
-    // Check if the user is the sender of the message
-    if (edited.sender.toString() !== id) {
-      return res.status(403).json({
-        error: "You can only edit your own messages."
-      })
+    if (message.sender.toString() !== id) {
+      return res.status(403).json({ 
+        error: "Unautorized.You can only edit your own messages."
+       })
     }
 
-    edited.text = newText
-    await edited.save()
+    message.text = newText
+    await message.save()
 
     res.status(200).json({
-      message: 'Edited.',
-      text: edited.text
-    })
-  } catch (err) {
-    res.status(500).json({
+       success: 'edited',
+        text: message.text
+       })
+  } catch (error) {
+    res.status(500).json({ 
       error: "Internal server error"
-    })
+     })
   }
 }
 
@@ -404,25 +342,24 @@ exports.editMessage = async (req, res) => {
 exports.copyMessage = async (req, res) => {
   try {
     const {messageId} = req.body
+
     const message = await messageModel.findById(messageId)
     if (!message) {
-      return res.status(404).json({
-        error: 'Message not found'
+      return res.status(404).json({ 
+        error: "Message not found" 
       })
     }
 
-    // copy message
     const copiedMessage = new messageModel({ text: message.text })
 
     await copiedMessage.save()
     res.status(200).json({
-      message: 'Copied.'
-    })
-
-  } catch (err) {
+       success: 'copied' 
+      })
+  } catch (error) {
     res.status(500).json({
-      error: "Internal server error"
-    })
+       error: "Internal server error" 
+      })
   }
 }
 
@@ -432,111 +369,38 @@ exports.reactOnChat = async (req, res) => {
     const id = req.user.userId
     const {messageId, reaction} = req.body
 
-    // Check if the reaction is a valid emoji
     if (!emoji.which(reaction)) {
       return res.status(400).json({
-        error: 'Invalid emoji'
-      })
+         error: "Invalid emoji" 
+        })
     }
 
-    // Find the chat message
     const message = await messageModel.findById(messageId)
     if (!message) {
       return res.status(404).json({
-        error: 'Message not found'
-      })
+         error: "Message not found" 
+        })
     }
 
-    // Find if the user has already reacted
     const existingReactionIndex = message.reactions.findIndex(reactionObj => reactionObj.userId === id)
 
-    // If user has already reacted
     if (existingReactionIndex !== -1) {
-      // If the user is reacting with the same emoji again, delete the previous reaction
       if (message.reactions[existingReactionIndex].reaction === reaction) {
         message.reactions.splice(existingReactionIndex, 1)
       } else {
-        // If the user is reacting with a different emoji, update the previous reaction
         message.reactions[existingReactionIndex].reaction = reaction
       }
     } else {
-      // If user has not reacted before, add the reaction
-      message.reactions.push({ userId: id, reaction })
+      message.reactions.push({userId: id, reaction})
     }
 
     await message.save()
-
-    res.status(200).json({
-      reactions: message.reactions
-    })
-
-  } catch (err) {
-    res.status(500).json({
-      error: "Internal server error"
-    })
-  }
-}
-
-
-exports.forwardMessage = async (req, res) => {
-  try {
-    const id = req.user.userId
-    const {messageId, forwardTo} = req.body
-
-    // Find the user either in the playerModel or agentModel
-    let user = await playerModel.findById(id) || await agentModel.findById(id)
-    if (!user) {
-      return res.status(404).json({
-        error: "User not found"
-      })
-    }
-
-    const message = await messageModel.findById(messageId)
-    if (!message) {
-      return res.status(404).json({
-        error: "Message not found."
-      })
-    }
-
-    if (!forwardTo || !Array.isArray(forwardTo)) {
-      return res.status(400).json({
-        error: "recipients (array of chat IDs) are required."
-      })
-    }
-
-    // Find chats that correspond to valid recipients
-    const chats = await chatModel.find({
-      _id: { $in: forwardTo }
-    })
-
-    // If no valid chats found, return an error
-    if (chats.length === 0) {
-      return res.status(404).json({
-        error: "No valid recipients found."
-      })
-    }
-
-    // Forward the message to valid recipients
-    const forwardMessages = forwardTo.map(async recipientId => {
-      const forwardedMessage = new messageModel({
-        chatId: recipientId,
-        text: message.text,
-        sender: id,
-        originalMessageId: messageId
-      })
-      await forwardedMessage.save()
-    })
-
-    await Promise.all(forwardMessages)
-
-    res.status(200).json({
-      success: `Message forwarded to ${forwardTo}.`
-    })
+    res.status(200).json(message.reactions)
 
   } catch (error) {
-    return res.status(500).json({
-      error: "Internal server error. Please try again later."
-    })
+    res.status(500).json({ 
+      error: "Internal server error"
+     })
   }
 }
 
@@ -544,49 +408,36 @@ exports.forwardMessage = async (req, res) => {
 exports.getChatmessage = async (req, res) => {
   try {
     const id = req.user.userId
-
-    if (!id) {
-      return res.status(401).json({
-        error: "Session expired.Login."
-      })
-    }
-
     const chatId = req.params.chatId
-    const chat = await chatModel.findById(chatId)
 
+    const chat = await chatModel.findById(chatId)
     if (!chat) {
       return res.status(404).json({
-        error: "Chat not found."
-      })
+         error: "Chat not found"
+         })
     }
 
     if (!chat.members.includes(id)) {
-      return res.status(403).json({
-        error: "Unauthorized"
+      return res.status(403).json({ 
+        error: "Unauthorized" 
       })
     }
 
-    // Fetch the messages
-    const messages = await messageModel.find({ chatId: chatId })
-
-    if (!messages || messages.length === 0) {
-      return res.status(404).json(null)
-    }
+    const messages = await messageModel.find({chatId})
 
     res.status(200).json(messages)
 
   } catch (error) {
-    res.status(500).json({
-      error: "Internal server error"
+    res.status(500).json({ 
+      error: "Internal server error" 
     })
   }
 }
 
-
 exports.blockChat = async (req, res) => {
   try {
     const id = req.user.userId
-    const {chatId} = req.body
+    const {chatId, blockUser} = req.body
 
     // Check if the chat exists
     const chat = await chatModel.findById(chatId)
@@ -597,9 +448,9 @@ exports.blockChat = async (req, res) => {
     }
 
     // Check if the user is a member of the chat
-    if (!chat.members.includes(id)) {
+    if (!chat.members.includes(id) && !chat.members.includes(blockUser)) {
       return res.status(400).json({
-        error: "You are not a member of this chat"
+        error: "Unauthorized"
       })
     }
 
@@ -610,12 +461,12 @@ exports.blockChat = async (req, res) => {
       })
     }
 
-    // Block the chat
-    chat.block.push(chatId)
+    // Block the chat  
+    chat.block.push(blockUser) &&  chat.block.push(chatId)
     await chat.save()
 
     return res.status(200).json({
-      message: "You've blocked this account"
+      message: "blocked"
     })
 
   } catch (error) {
@@ -629,7 +480,7 @@ exports.blockChat = async (req, res) => {
 exports.unblockChat = async (req, res) => {
   try {
     const id = req.user.userId
-    const {chatId} = req.body
+    const {chatId, unBlockUser} = req.body
 
     // Check if the chat exists
     const chat = await chatModel.findById(chatId)
@@ -639,27 +490,29 @@ exports.unblockChat = async (req, res) => {
       })
     }
 
-    // Check if the user is a member of the chat
-    if (!chat.members.includes(id)) {
+    // Check if the user is authorized to unblock
+    if (!chat.members.includes(id) || !chat.block.includes(chatId)) {
       return res.status(400).json({
-        error: "You are not a member of this chat"
+        error: "Unauthorized to unblock this chat"
       })
     }
 
-    // Check if the chat is already unblocked
-    if (!chat.block.includes(chatId)) {
-      return res.status(200).json({
-        message: "Chat is not blocked"
-      })
+    // Remove the user and chat from block list
+    const indexUser = chat.block.indexOf(unBlockUser)
+    if (indexUser !== -1) {
+      chat.block.splice(indexUser, 1)
     }
 
-    // Unblock the chat
-    chat.block = chat.block.filter(blockedId => blockedId.toString() !== chatId.toString())
+    const indexChat = chat.block.indexOf(chatId)
+    if (indexChat !== -1) {
+      chat.block.splice(indexChat, 1)
+    }
     await chat.save()
 
     return res.status(200).json({
       message: "Unblocked"
     })
+
   } catch (error) {
     return res.status(500).json({
       error: "Internal server error"
@@ -671,7 +524,7 @@ exports.unblockChat = async (req, res) => {
 exports.deleteMessage = async (req, res) => {
   try {
     const id = req.user.userId
-    const { messageId } = req.body
+    const {messageId} = req.body
 
     // Find the user
     const user = await playerModel.findById(id)
@@ -682,7 +535,6 @@ exports.deleteMessage = async (req, res) => {
     }
 
     // Find the chat message
- 
     const message = await messageModel.findById(messageId)
     if (!message) {
       return res.status(404).json({
@@ -712,7 +564,6 @@ exports.deleteMessage = async (req, res) => {
     if (chat.admin.includes(id)) {
       responseMessage = `This message was deleted by admin ${user.userName}`
     }
-
     res.status(200).json({
       message: responseMessage
     })
@@ -730,68 +581,103 @@ exports.addMembers = async (req, res) => {
     const id = req.user.userId
     const {groupId, newMembers} = req.body
 
+    let user = await playerModel.findById(id) || await agentModel(id)
+
     if (!Array.isArray(newMembers)) {
       return res.status(400).json({
-        error: "Field should be an array."
-      })
+         error: "Field should be an array" 
+        })
     }
 
-    const user = await playerModel.findById(id) || await agentModel.findById(id)
-    if (!user) {
-      return res.status(401).json({
-        error: "User not found."
-      })
-    }
-
-    const NewPlayers = await playerModel.find({ _id: { $in: newMembers } })
-    const NewAgents = await agentModel.find({ _id: { $in: newMembers } })
-    const New = [...NewPlayers, ...NewAgents]
-
-    if (New.length === 0) {
+    const group = await chatModel.findById(groupId)
+    if (!group) {
       return res.status(404).json({
-        message: "Not found."
-      })
+         error: "Chat not found" 
+        })
     }
 
-    const newAdds = New.map(users => users.userName)
-
-    // Find the chat group
-    const chat = await chatModel.findById(groupId)
-    if (!chat) {
-      return res.status(404).json({
-        error: "Chat not found."
-      })
-    }
-
-    // Check if the user is an admin of the chat group
-    if (!chat.admin.includes(id)) {
+    if (!group.admin.includes(id)) {
       return res.status(403).json({
-        error: "Unauthorized."
-      })
+         error: "Unauthorized" 
+        })
     }
 
-    // Filter out members that are already in the chat group
-    const newUniqueMembers = newMembers.filter(member => !chat.members.includes(member))
-
+    const newUniqueMembers = newMembers.filter(member => !group.members.includes(member))
     if (newUniqueMembers.length === 0) {
       return res.status(400).json({
-        message: `${newAdds.join(", ")} already in the group.`
+         message: "No new members to add" 
+        })
+    }
+
+    group.members.push(...newUniqueMembers)
+    await group.save()
+
+    res.status(200).json({
+       message: `${user.userName} added new member(s)`
+       })
+  } catch (error) {
+    res.status(500).json({
+       error: "Internal server error" 
+      })
+  }
+}
+
+
+exports.forwardMessage = async (req, res) => {
+  try {
+    const id = req.user.userId
+    const {messageId, forwardTo} = req.body
+
+    // Validate message
+    const message = await messageModel.findById(messageId)
+    if (!message) {
+      return res.status(404).json({
+        error: "Message not found."
       })
     }
 
-    // Add new members to the chat group
-    const updatedMembers = Array.from(new Set([...chat.members, ...newUniqueMembers]))
+    // Validate recipients
+    if (!forwardTo || !Array.isArray(forwardTo)) {
+      return res.status(400).json({ 
+        error: "Recipients (array of chat IDs) are required." 
+      })
+    }
 
-    const updatedChat = await chatModel.findByIdAndUpdate(groupId, { members: updatedMembers }, { new: true })
+    // Find chats that correspond to valid recipients
+    const chats = await chatModel.find({
+      _id: { $in: forwardTo }
+    })
 
-    return res.status(200).json({
-      message: `${user.userName} added ${newAdds.join(", ")}.`,
-      updatedChat
+
+    // If no valid chats found, return an error
+    if (chats.length === 0) {
+      return res.status(404).json({
+        error: "No recipients found."
+      })
+    }
+
+    // Forward message to valid chats
+    const forwardMessages = chats.map(async chat => {
+      const forwardedMessage = new messageModel({
+        chatId: chat._id,
+        text: message.text,
+        sender: id,
+        originalMessageId: messageId,
+        media: message.media,
+        voice: message.voice
+      })
+      await forwardedMessage.save()
+    })
+
+    await Promise.all(forwardMessages)
+
+    res.status(200).json({ 
+      success: `forwarded to ${uniqueChats.length} chat(s).`
     })
 
   } catch (error) {
     return res.status(500).json({
-      error: "Internal server error."
+       error: "Internal server error." 
     })
   }
 }
@@ -802,49 +688,43 @@ exports.editAdmin = async (req, res) => {
     const id = req.user.userId
     const {groupId, addToAdmin} = req.body
 
-    if (!id) {
-      return res.status(401).json({
-        error: "Session expired. Please log in.",
-      })
-    }
-
     let newAdd = await playerModel.findById(addToAdmin) || await agentModel.findById(addToAdmin)
 
     const group = await chatModel.findById(groupId)
     if (!group) {
-      return res.status(404).json({
-        error: "group not found.",
+      return res.status(404).json({ 
+        error: "Group not found" 
       })
     }
 
     if (!group.admin.includes(id)) {
       return res.status(403).json({
-        error: "Unauthorized.",
-      })
+         error: "Unauthorized" 
+        })
     }
 
     if (!group.members.includes(addToAdmin)) {
-      return res.status(404).json({
-        error: "Member not part of this group"
+      return res.status(404).json({ 
+        error: `${addToAdmin} not part of this group`
       })
     }
 
     if (group.admin.includes(addToAdmin)) {
-      return res.status(404).json({
-        error: `${newAdd.userName} is already an admin.`
-      })
+      return res.status(400).json({
+         error: "Member is already an admin" 
+        })
     }
 
     group.admin.push(addToAdmin)
     await group.save()
 
-    return res.status(200).json({
-      message: `${newAdd.userName} is now an admin.`,
-    })
+    res.status(200).json({ 
+      message: `${newAdd.userName} is now an admin`
+     })
   } catch (error) {
     res.status(500).json({
-      error: "Internal server error",
-    })
+       error: "Internal server error" 
+      })
   }
 }
 
@@ -861,6 +741,7 @@ exports.removeMembers = async (req, res) => {
         error: "User not found"
       })
     }
+
     let remove = await playerModel.findById(removeMember) || await agentModel.findById(removeMember)
 
     // Find the group by groupId
@@ -911,7 +792,7 @@ exports.removeMembers = async (req, res) => {
     await group.save()
 
     res.status(200).json({
-      message:  `${user.userName} removed you from this group`
+      message:  `${user.userName} removed ${remove.userName} from this group`
     })
 
   } catch (error) {
@@ -985,43 +866,35 @@ exports.exitGroup = async (req, res) => {
 exports.deleteChat = async (req, res) => {
   try {
     const id = req.user.userId
-    const chatId = req.body.chatId
-
+    const {chatId} = req.body
 
     const chat = await chatModel.findById(chatId)
-
     if (!chat) {
-      return res.status(404).json({
-        error: "Chat not found."
+      return res.status(404).json({ 
+        error: "Chat not found" 
       })
     }
 
-    // Check if the user is a member of the chat
     if (!chat.members.includes(id)) {
       return res.status(403).json({
-        error: "Unauthourized."
-      })
+         error: "Unauthorized" 
+        })
     }
 
-    // Remove the user from the chat's members array
     chat.members = chat.members.filter(memberId => memberId.toString() !== id)
 
-    // If no members remain, delete the chat
     if (chat.members.length === 0) {
       await chatModel.findByIdAndDelete(chatId)
-
-      return res.status(200).json({
-        message: "deleted successfully"
-      })
     } else {
       await chat.save()
-      return res.status(200).json({
-        message: "deleted successfully"
-      })
     }
-  } catch (error) {
-    res.status(500).json({
-      error: "Internal server error"
+
+    res.status(200).json({ 
+      message: "Chat deleted successfully" 
     })
+  } catch (error) {
+    res.status(500).json({ 
+      error: "Internal server error"
+     })
   }
 }

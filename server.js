@@ -3,7 +3,7 @@ const socket = require("socket.io")
 const cors = require("cors")
 const http = require("http")
 
-const CallsController = require("./controllers/calls")
+const Calls = require("./controllers/calls")
 const notificationController = require('./controllers/notificationController')
 const userRouter = require("./routers/userRouter")
 const postRouter = require("./routers/postRouter")
@@ -14,7 +14,7 @@ const storyRouter = require("./routers/storyRouter")
 require("./config/config")
 require("dotenv").config()
 
-const port = process.env.PORT || 1999
+const port = process.env.port || 1999
 const app = express()
 const server = http.createServer(app)
 
@@ -35,7 +35,10 @@ const io = socket(server, {
   },
 })
 
-new CallsController(server)
+new Calls(server)
+
+const messages = new Map()
+const onlineUsers = new Map()
 
 io.on("connection", (socket) => {
   console.log(`Socket connected: ${socket.id}`)
@@ -49,7 +52,6 @@ io.on("connection", (socket) => {
     if (sendUserSocket) {
       socket.to(sendUserSocket).emit("msg-recieve", data.msg)
       
-      // Example notification sending
       notificationController.sendNotification(data.to, "You have a new message!", messages)
     }
   })
@@ -68,6 +70,31 @@ io.on("connection", (socket) => {
   socket.on("get-notifications", (userId) => {
     const userNotifications = notificationController.getNotifications(userId)
     socket.emit("notifications-recieve", userNotifications)
+  })
+
+  socket.on("call-user", (data) => {
+    const sendUserSocket = messages.get(data.to)
+    if (sendUserSocket) {
+      socket.to(sendUserSocket).emit("receive-call", {
+        signal: data.signalData,
+        from: data.from,
+        callType: data.callType
+      })
+    }
+  })
+
+  socket.on("answer-call", (data) => {
+    const sendUserSocket = messages.get(data.to)
+    if (sendUserSocket) {
+      socket.to(sendUserSocket).emit("call-accepted", { signal: data.signalData })
+    }
+  })
+
+  socket.on("end-call", (data) => {
+    const sendUserSocket = messages.get(data.to)
+    if (sendUserSocket) {
+      socket.to(sendUserSocket).emit("call-ended")
+    }
   })
 
   socket.on("disconnect", () => {
