@@ -201,7 +201,7 @@ exports.likePost = async (req, res) => {
 
         // Return the updated post
         res.status(200).json({
-            post: updatedPost.likes.length
+            likes: updatedPost.likes.length
         })
     } catch (error) {
         res.status(500).json({
@@ -250,7 +250,7 @@ exports.unlikePost = async (req, res) => {
 
         // Return the updated post
         res.status(200).json({
-            post: updatedPost.likes.length
+            likes: updatedPost.likes.length
         })
     } catch (error) {
         res.status(500).json({

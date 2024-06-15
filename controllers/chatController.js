@@ -286,9 +286,7 @@ if (chat.block.includes(chatId)) {
     })
     await message.save()
 
-    res.status(200).json({
-      voiceNote: message.voice
-    })
+    res.status(200).json(message.voice)
   } catch (error) {
     res.status(500).json({
       error: "Internal server error"
@@ -662,7 +660,7 @@ exports.forwardMessage = async (req, res) => {
     await Promise.all(forwardMessages)
 
     res.status(200).json({ 
-      success: `forwarded to ${uniqueChats.length} chat(s).`
+      success: `forwarded`
     })
 
   } catch (error) {
