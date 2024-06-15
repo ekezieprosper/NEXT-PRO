@@ -703,9 +703,9 @@ exports.changePassword = async (req, res) => {
     try {
         const id = req.user.userId
 
-        const {recentPassword, newPassword, confirmPassword} = req.body
+        const {currentPassword, newPassword, confirmPassword} = req.body
 
-        if (!recentPassword) {
+        if (!currentPassword) {
             return res.status(400).json({
                 error: "Input recent password."
             })
@@ -728,7 +728,7 @@ exports.changePassword = async (req, res) => {
             user = await playerModel.findById(id)
         }
 
-        const checkPassword = await bcrypt.compare(recentPassword, user.password)
+        const checkPassword = await bcrypt.compare(currentPassword, user.password)
 
         if (!checkPassword) {
             return res.status(401).json({
