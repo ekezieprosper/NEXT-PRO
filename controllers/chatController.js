@@ -19,16 +19,6 @@ exports.startChat = async (req, res) => {
       })
     }
 
-    // // Check if a chat with both id and friendId already exists
-    // const existingChat = await chatModel.findOne({
-    //   members: { $all: [id, friendId] }
-    // })
-    // if (existingChat) {
-    //   return res.status(400).json({
-    //     error: `You already have an existing chat with ${user.userName}`
-    //   })
-    // }
-
     const newChat = await chatModel.create({
       members: [id, friendId]
     })
