@@ -47,7 +47,7 @@ const playerSchema = new mongoose.Schema({
            }, 
         striker:{
             type: String,
-            enum: ["CF", "ST"]
+            enum: ["CF", "ST", "SS"]
            }, 
      },
      
