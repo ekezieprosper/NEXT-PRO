@@ -98,7 +98,7 @@ exports.getstory = async (req, res) => {
             })
         }
 
-        const timeCreated = new Date(story.createdAt)
+        const timeCreated = new Date(story.date)
         const expiresIn = new Date(timeCreated.getTime() + 24 * 60 * 60 * 1000)
         const currentTime = new Date()
 

@@ -55,7 +55,8 @@ exports.createPost = async (req, res) => {
             postId: post._id,
             post: post.post,
             likes: post.likes,
-            comments: post.comments
+            comments: post.comments,
+            date: post.date
         }
 
         // Add text to response if it was provided

@@ -62,7 +62,7 @@ const agentSchema = new mongoose.Schema({
          ref: 'subscription'
         },
 
-  time: {type: Date, default: Date.now}
+     date: {type: Date, default: Date.now}
 
 })
 

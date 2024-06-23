@@ -25,7 +25,7 @@ const storySchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
     }],
     
-    createdAt: {
+    date: {
         type: Date,
         default: Date.now,
         expires: (24 * 60 * 60 * 1000)

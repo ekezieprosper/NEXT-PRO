@@ -26,6 +26,11 @@ const postSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId
     },
 
+    date: {
+        type: Date,
+        default: Date.now
+    },
+
     player: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "player",

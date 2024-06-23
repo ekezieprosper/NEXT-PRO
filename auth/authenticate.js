@@ -34,7 +34,7 @@ const authenticate = async (req, res, next) => {
       })
     }
 
-    const timeCreated = new Date(user.time)
+    const timeCreated = new Date(user.date)
     const logoutTime = new Date(timeCreated.getTime() + 30 * 24 * 60 * 60 * 1000)
     const currentTime = new Date()
 
@@ -43,7 +43,7 @@ const authenticate = async (req, res, next) => {
      await playerModel.findByIdAndUpdate(user._id,{tokens:null})
      
       return res.status(400).json({
-        error: `Session expired. Login to ${user.userName}`,
+        error: `Session expired. please login`,
       })
     }
 
