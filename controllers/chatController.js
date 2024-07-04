@@ -19,6 +19,12 @@ exports.startChat = async (req, res) => {
       })
     }
 
+    if (friendId === id) {
+      return res.status(401).json({
+        error:"cannot initialize chat for yourself"
+      })
+    }
+
     const newChat = await chatModel.create({
       members: [id, friendId]
     })
