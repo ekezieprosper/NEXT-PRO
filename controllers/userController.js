@@ -8,8 +8,8 @@ const jwt = require("jsonwebtoken")
 require("dotenv").config()
 const DynamicEmail = require("../Emails/emailIndex")
 const sendEmail = require("../Emails/email")
-const {resetFunc} = require("../Emails/resetPasswordEmail")
-const {resendResetFunc} = require("../Emails/resendResetEmail")
+const { resetFunc } = require("../Emails/resetPasswordEmail")
+const { resendResetFunc } = require("../Emails/resendResetEmail")
 const resendOtpEmail = require("../Emails/resendVerificationOtp")
 
 
@@ -21,7 +21,7 @@ exports.home = (req, res) => {
 exports.signupPlayer = async (req, res) => {
     try {
         // Required information for registration
-        const {userName, password, gender, position, email} = req.body
+        const { userName, password, gender, position, email } = req.body
 
         if (!position) {
             return res.status(400).json({
@@ -37,7 +37,7 @@ exports.signupPlayer = async (req, res) => {
         }
 
         // Check if the email already exists in the agent database
-        const Email = await agentModel.findOne({email}).limit(1)
+        const Email = await agentModel.findOne({ email }).limit(1)
 
         if (Email) {
             return res.status(403).json({
@@ -64,9 +64,9 @@ exports.signupPlayer = async (req, res) => {
         }
 
         // Check if user already exists in the database
-        let searchUsername = await agentModel.findOne({userName}).limit(1)
+        let searchUsername = await agentModel.findOne({ userName }).limit(1)
         if (!searchUsername) {
-            searchUsername = await playerModel.findOne({userName}).limit(1)
+            searchUsername = await playerModel.findOne({ userName }).limit(1)
         }
 
         // Throw an error if user was found
@@ -118,7 +118,7 @@ exports.signupPlayer = async (req, res) => {
 exports.signupAgent = async (req, res) => {
     try {
         // required information for registration
-        const {userName, password, gender, email} = req.body
+        const { userName, password, gender, email } = req.body
 
         // Basic email validation
         if (!email || typeof email !== 'string' || !email.includes('@')) {
@@ -128,7 +128,7 @@ exports.signupAgent = async (req, res) => {
         }
 
         // Check if the email exists in the player's database
-        const Email = await playerModel.findOne({email}).limit(1)
+        const Email = await playerModel.findOne({ email }).limit(1)
 
         if (Email) {
             return res.status(403).json({
@@ -155,9 +155,9 @@ exports.signupAgent = async (req, res) => {
         }
 
         // check if user already exists in the database
-        let searchUsername = await agentModel.findOne({userName}).limit(1)
+        let searchUsername = await agentModel.findOne({ userName }).limit(1)
         if (!searchUsername) {
-            searchUsername = await playerModel.findOne({userName}).limit(1)
+            searchUsername = await playerModel.findOne({ userName }).limit(1)
         }
 
         // throw an error if user was found
@@ -211,10 +211,10 @@ const sendOtp = async (agent, player, otp) => {
         const userName = agent ? agent.userName : player.userName
         const email = agent ? agent.email : player.email
         const text = `Verification code ${otp}`
-        const verificationLink = `https://elitefootball.onrender.com/verify/${agent?._id||player?._id}`
+        const verificationLink = `https://elitefootball.onrender.com/verify/${agent?._id || player?._id}`
 
         const html = DynamicEmail(userName, otp, verificationLink)
-        await sendEmail({email, subject, text, html})
+        await sendEmail({ email, subject, text, html })
 
         // Hash OTP then save it to the database
         const saltotp = bcrypt.genSaltSync(10)
@@ -238,8 +238,8 @@ exports.resendOTP = async (req, res) => {
         const id = req.params.id
 
         const agent = await agentModel.findById(id)
-        const  player = await playerModel.findById(id)
-        
+        const player = await playerModel.findById(id)
+
         const user = player || agent
 
         if (!user) {
@@ -264,20 +264,20 @@ exports.resendOTP = async (req, res) => {
 
         // Save the hashed OTP in the OTPModel for verification
         await OTPModel.create({
-            agentId:agent ? id :undefined,
-            playerId:player? id :undefined,
+            agentId: agent ? id : undefined,
+            playerId: player ? id : undefined,
             otp: hashotp
         })
-    
+
 
         // Send the OTP to the agent's email
         const subject = "Email Verification"
         const text = `Verification code ${otp}`
         const verificationLink = `https://elitefootball.onrender.com/verify/${user._id}`
         const html = resendOtpEmail(user.userName, otp, verificationLink)
-        await sendEmail({email: user.email, subject, text, html})
+        await sendEmail({ email: user.email, subject, text, html })
 
-       
+
 
         return res.status(200).json({
             message: "check your email address"
@@ -293,12 +293,12 @@ exports.resendOTP = async (req, res) => {
 exports.verify = async (req, res) => {
     try {
         const id = req.params.id
-        const {otp} = req.body
+        const { otp } = req.body
 
         // Search for the latest OTP record the user
-        let otpRecord = await OTPModel.findOne({agentId: id}).sort({createdAt: -1})
+        let otpRecord = await OTPModel.findOne({ agentId: id }).sort({ createdAt: -1 })
         if (!otpRecord) {
-            otpRecord = await OTPModel.findOne({playerId: id}).sort({createdAt: -1})
+            otpRecord = await OTPModel.findOne({ playerId: id }).sort({ createdAt: -1 })
         }
 
         if (!otpRecord) {
@@ -313,7 +313,7 @@ exports.verify = async (req, res) => {
 
         if (currentTime > otpExpirationTime) {
             // Delete the OTP record from the database
-            await OTPModel.deleteOne({_id: otpRecord._id})
+            await OTPModel.deleteOne({ _id: otpRecord._id })
 
             return res.status(400).json({
                 error: "OTP has expired"
@@ -361,7 +361,7 @@ exports.verify = async (req, res) => {
         const token = jwt.sign({
             userId: user._id,
             userName: user.userName
-        }, process.env.jwtkey, {expiresIn:'30d'})
+        }, process.env.jwtkey, { expiresIn: '30d' })
 
 
         // Assign the token to the user and save
@@ -380,7 +380,7 @@ exports.verify = async (req, res) => {
 
 exports.logIn = async (req, res) => {
     try {
-        const {userName, password} = req.body
+        const { userName, password } = req.body
 
         // Check if at least one identifier is provided
         if (!userName) {
@@ -397,9 +397,9 @@ exports.logIn = async (req, res) => {
         }
 
         // Search for the user based on userName, email, or phoneNumber
-        let user = await agentModel.findOne({userName}).limit(1)
+        let user = await agentModel.findOne({ userName }).limit(1)
         if (!user) {
-            user = await playerModel.findOne({userName}).limit(1)
+            user = await playerModel.findOne({ userName }).limit(1)
         }
 
 
@@ -428,7 +428,7 @@ exports.logIn = async (req, res) => {
         const token = jwt.sign({
             userId: user._id,
             userName: user.userName
-        }, process.env.jwtkey, {expiresIn: '30d'})
+        }, process.env.jwtkey, { expiresIn: '30d' })
 
         // Assign the token to the user and save
         user.tokens = token
@@ -494,8 +494,8 @@ exports.logOut = async (req, res) => {
 
 exports.forgotPassword = async (req, res) => {
     try {
-        const {email} = req.body
-        
+        const { email } = req.body
+
         // Validate email
         if (!email || !email.includes('@')) {
             return res.status(400).json({
@@ -504,7 +504,7 @@ exports.forgotPassword = async (req, res) => {
         }
 
         // Find user by email in either agent or player collection
-        const foundUser = await agentModel.findOne({email}) || await playerModel.findOne({email})
+        const foundUser = await agentModel.findOne({ email }) || await playerModel.findOne({ email })
 
         if (!foundUser) {
             return res.status(404).json({
@@ -544,61 +544,61 @@ exports.forgotPassword = async (req, res) => {
 }
 
 
- exports.ResndResetOtpCode = async (req, res) => {
-        try {
-            const id = req.params.id
-       
-            const agent = await agentModel.findById(id)
-            const player = await playerModel.findById(id)
-            let users = player || agent
+exports.ResndResetOtpCode = async (req, res) => {
+    try {
+        const id = req.params.id
 
-            if(!users){
-                return res.status(404).json({
-                    error: "user not found"
-                })
-            }
-        
-            const otp = `${Math.floor(Math.random() * 1000000)}`.padStart(6, '0')
-    
-            // hash OTP then save it to the database
-            const saltotp = bcrypt.genSaltSync(10)
-            const hashotp = bcrypt.hashSync(otp, saltotp)    
-    
-            // Send the OTP to the user's email
-                const subject = "Reset Password"
-            const verificationLink = `https://elitefootball.onrender.com/reset_password/${users._id}`
-    
-                const html = resendResetFunc(users.userName, otp, verificationLink)
-                await sendEmail({email: users.email, subject, html})
-    
-                     
-            // Save the hashed OTP in the OTPModel for verification
-            await OTPModel.create({
-                agentId:agent ? id :undefined,
-                playerId:player? id :undefined,
-                otp: hashotp
-            })
-    
-                res.status(200).json({
-                    message: `An otp code has been resent to your email.`,
-                })          
-        } catch (err) {
-            res.status(500).json({
-                error: 'Internal server error'
+        const agent = await agentModel.findById(id)
+        const player = await playerModel.findById(id)
+        let users = player || agent
+
+        if (!users) {
+            return res.status(404).json({
+                error: "user not found"
             })
         }
+
+        const otp = `${Math.floor(Math.random() * 1000000)}`.padStart(6, '0')
+
+        // hash OTP then save it to the database
+        const saltotp = bcrypt.genSaltSync(10)
+        const hashotp = bcrypt.hashSync(otp, saltotp)
+
+        // Send the OTP to the user's email
+        const subject = "Reset Password"
+        const verificationLink = `https://elitefootball.onrender.com/reset_password/${users._id}`
+
+        const html = resendResetFunc(users.userName, otp, verificationLink)
+        await sendEmail({ email: users.email, subject, html })
+
+
+        // Save the hashed OTP in the OTPModel for verification
+        await OTPModel.create({
+            agentId: agent ? id : undefined,
+            playerId: player ? id : undefined,
+            otp: hashotp
+        })
+
+        res.status(200).json({
+            message: `An otp code has been resent to your email.`,
+        })
+    } catch (err) {
+        res.status(500).json({
+            error: 'Internal server error'
+        })
     }
+}
 
 
 exports.verifyPasswordOTP = async (req, res) => {
     try {
         const id = req.params.id
-        const {otp} = req.body
+        const { otp } = req.body
 
         // Search for the latest OTP record the user
-        let otpRecord = await OTPModel.findOne({agentId: id}).sort({createdAt: -1})
+        let otpRecord = await OTPModel.findOne({ agentId: id }).sort({ createdAt: -1 })
         if (!otpRecord) {
-            otpRecord = await OTPModel.findOne({playerId: id}).sort({createdAt: -1})
+            otpRecord = await OTPModel.findOne({ playerId: id }).sort({ createdAt: -1 })
         }
 
         if (!otpRecord) {
@@ -613,7 +613,7 @@ exports.verifyPasswordOTP = async (req, res) => {
 
         if (currentTime > otpExpirationTime) {
             // Delete the OTP record from the database
-            await OTPModel.deleteOne({_id: otpRecord._id})
+            await OTPModel.deleteOne({ _id: otpRecord._id })
 
             return res.status(400).json({
                 error: "OTP has expired"
@@ -648,7 +648,7 @@ exports.resetPassword = async (req, res) => {
     try {
         const id = req.params.id
 
-        const {newPassword, confirmPassword} = req.body
+        const { newPassword, confirmPassword } = req.body
 
         // Input Validation
         if (!newPassword || !confirmPassword) {
@@ -703,7 +703,7 @@ exports.changePassword = async (req, res) => {
     try {
         const id = req.user.userId
 
-        const {currentPassword, newPassword, confirmPassword} = req.body
+        const { currentPassword, newPassword, confirmPassword } = req.body
 
         if (!currentPassword) {
             return res.status(400).json({
@@ -762,7 +762,7 @@ exports.changePassword = async (req, res) => {
 exports.updateUserName = async (req, res) => {
     try {
         const id = req.user.userId
-        const {userName} = req.body
+        const { userName } = req.body
 
         // Check if a new userName is provided in the body
         if (!userName) {
@@ -770,17 +770,17 @@ exports.updateUserName = async (req, res) => {
         }
 
         // Check if user already exists in the database
-          // Check if user exists in agentModel
-          let user = await agentModel.findById(id) || await playerModel.findById(id)
-          if (!user) {
-             return res.status(404).json({
-              error: "User not found"
-          })
-       }
-          
+        // Check if user exists in agentModel
+        let user = await agentModel.findById(id) || await playerModel.findById(id)
+        if (!user) {
+            return res.status(404).json({
+                error: "User not found"
+            })
+        }
+
 
         // Check if the new userName is already taken by another user
-        let existingUser = await agentModel.findOne({userName}) || await playerModel.findOne({userName})
+        let existingUser = await agentModel.findOne({ userName }) || await playerModel.findOne({ userName })
         // Throw an error if userName is already taken
         if (existingUser) {
             return res.status(403).json({
@@ -812,7 +812,7 @@ exports.updateEmail = async (req, res) => {
     try {
         const id = req.user.userId
 
-        const {password, email} = req.body
+        const { password, email } = req.body
 
         // Validate the new email address
         if (!email || typeof email !== 'string' || !email.includes('@')) {
@@ -856,7 +856,7 @@ exports.updateUserProfile = async (req, res) => {
     try {
         const id = req.user.userId
 
-        const {name, locatedAt, phoneNumber, Birthday, Bio, relationship_status} = req.body
+        const { name, locatedAt, phoneNumber, Birthday, Bio, relationship_status } = req.body
 
         if (name.length < 3) {
             return res.status(400).json({
@@ -871,7 +871,7 @@ exports.updateUserProfile = async (req, res) => {
             Birthday,
             Bio,
             relationship_status
-        }, {new: true})
+        }, { new: true })
 
         if (!user) {
             user = await playerModel.findByIdAndUpdate(id, {
@@ -881,7 +881,7 @@ exports.updateUserProfile = async (req, res) => {
                 Birthday,
                 Bio,
                 relationship_status
-            }, {new: true})
+            }, { new: true })
         }
 
         if (!user) {
@@ -914,10 +914,10 @@ exports.createProfileImg = async (req, res) => {
         let user = await agentModel.findById(id) || await playerModel.findById(id)
 
         if (!user) {
-           return res.status(404).json({
-            error: "User not found"
-        })
-     }
+            return res.status(404).json({
+                error: "User not found"
+            })
+        }
 
         // Validate file upload
         const file = req.file
@@ -934,13 +934,13 @@ exports.createProfileImg = async (req, res) => {
 
         // Send success response
         res.status(200).json({
-             profileImg: user.profileImg 
-            })
+            profileImg: user.profileImg
+        })
 
     } catch (error) {
         return res.status(500).json({
-         error: "Bad internet connection"
-      })
+            error: "Bad internet connection"
+        })
     }
 }
 
@@ -996,8 +996,8 @@ exports.getUsers = async (req, res) => {
         const regex = new RegExp(username, 'i')
 
         // Find users whose usernames match the regular expression
-        const playerPromise = playerModel.find({userName: regex})
-        const agentPromise = agentModel.find({userName: regex})
+        const playerPromise = playerModel.find({ userName: regex })
+        const agentPromise = agentModel.find({ userName: regex })
 
         const [player, agent] = await Promise.all([playerPromise, agentPromise])
 
@@ -1025,7 +1025,7 @@ exports.follow = async (req, res) => {
     try {
         const id = req.user.userId
 
-        const {entityId} = req.body
+        const { entityId } = req.body
 
         if (id === entityId) {
             return res.status(400).json({
@@ -1076,6 +1076,10 @@ exports.follow = async (req, res) => {
         await Promise.all([user.save(), entity.save()])
 
         return res.status(200).json({
+            new_follow: [
+                entity._id,
+                entity.userName
+            ],
             followers: entity.followers.length
         })
     } catch (error) {
@@ -1143,8 +1147,8 @@ exports.unfollow = async (req, res) => {
 exports.getOneFollower = async (req, res) => {
     try {
         const id = req.user.userId
-        const {userName} = req.body
-        let {limit, page} = req.query
+        const { userName } = req.body
+        let { limit, page } = req.query
 
         let user = await agentModel.findById(id) || await playerModel.findById(id)
         if (!user) {
@@ -1154,8 +1158,8 @@ exports.getOneFollower = async (req, res) => {
         }
 
         // Set default values for limit and page if not provided
-        limit = limit ? parseInt(limit): 10
-        page = page ? parseInt(page): 1
+        limit = limit ? parseInt(limit) : 10
+        page = page ? parseInt(page) : 1
 
         // Validate limit and page
         if (isNaN(limit) || limit <= 0 || isNaN(page) || page <= 0) {
@@ -1209,7 +1213,7 @@ exports.getAllFollowers = async (req, res) => {
     try {
         const id = req.user.userId
 
-        let {limit, page} = req.query
+        let { limit, page } = req.query
 
         // Set default values for limit and page if not provided
         limit = limit ? parseInt(limit) : 10
@@ -1221,7 +1225,7 @@ exports.getAllFollowers = async (req, res) => {
                 error: "Invalid limit or page value."
             })
         }
- 
+
         let user = await agentModel.findById(id) || await playerModel.findById(id)
         if (!user) {
             return res.status(404).json({
@@ -1273,19 +1277,19 @@ exports.getAllFollowers = async (req, res) => {
 exports.getOneFollowing = async (req, res) => {
     try {
         const id = req.user.userId
-        const {userName} = req.body
-        let {limit, page} = req.query
+        const { userName } = req.body
+        let { limit, page } = req.query
 
         let user = await agentModel.findById(id) || await playerModel.findById(id)
-        if(!user){
+        if (!user) {
             return res.status(404).json({
                 error: "user not found"
             })
         }
 
         // Set default values for limit and page
-        limit = limit ? parseInt(limit): 10
-        page = page ? parseInt(page): 1
+        limit = limit ? parseInt(limit) : 10
+        page = page ? parseInt(page) : 1
 
         // Validate limit and page
         if (isNaN(limit) || limit <= 0 || isNaN(page) || page <= 0) {
@@ -1336,11 +1340,11 @@ exports.getOneFollowing = async (req, res) => {
 exports.getAllFollowing = async (req, res) => {
     try {
         const id = req.user.userId
-        let {limit, page} = req.query
+        let { limit, page } = req.query
 
         // Set default values for limit and page if not provided
-        limit = limit ? parseInt(limit): 10
-        page = page ? parseInt(page): 1
+        limit = limit ? parseInt(limit) : 10
+        page = page ? parseInt(page) : 1
 
         // Validate limit and page
         if (isNaN(limit) || limit <= 0 || isNaN(page) || page <= 0) {
@@ -1401,7 +1405,7 @@ exports.getAllFollowing = async (req, res) => {
 exports.subscription = async (req, res) => {
     try {
         const id = req.user.userId
-        const {plan} = req.body
+        const { plan } = req.body
 
         if (!plan) {
             return res.status(400).json({
@@ -1421,7 +1425,7 @@ exports.subscription = async (req, res) => {
         }
 
         // Create new subscription
-        const subscription = new subscriptionModel({plan, owner: id})
+        const subscription = new subscriptionModel({ plan, owner: id })
         user.subscribed = true
         await user.save()
         subscription.subscribed = true
@@ -1433,7 +1437,7 @@ exports.subscription = async (req, res) => {
             id: subscription._id,
             plan: subscription.plan,
             expires_in: `${subscription.expiresIn}`
-            
+
         })
     } catch (error) {
         res.status(500).json({
@@ -1450,7 +1454,7 @@ exports.getSubscription = async (req, res) => {
         let user = await playerModel.findById(id) || await agentModel.findById(id)
 
         // Find the subscription by owner ID
-        const subscription = await subscriptionModel.findOne({owner: id})
+        const subscription = await subscriptionModel.findOne({ owner: id })
 
         if (id !== subscription.owner) {
             return res.status(401).json({
@@ -1466,11 +1470,11 @@ exports.getSubscription = async (req, res) => {
 
         // Check if the subscription is expired and delete it
         if (subscription.isExpired()) {
-            await subscriptionModel.deleteOne({_id: subscription._id})
+            await subscriptionModel.deleteOne({ _id: subscription._id })
             user.subscribed = false
             await user.save()
             return res.status(404).json({
-            message: `Your $${subscription.amount} ${subscription.plan} subscription plan has expired`
+                message: `Your $${subscription.amount} ${subscription.plan} subscription plan has expired`
             })
         }
 
@@ -1485,15 +1489,12 @@ exports.getSubscription = async (req, res) => {
     }
 }
 
- 
+
 exports.deleteAccount = async (req, res) => {
     try {
         const id = req.user.userId
 
-        let deleteAcct = await agentModel.findByIdAndDelete(id)
-        if (!deleteAcct) {
-            deleteAcct = await playerModel.findByIdAndDelete(id)
-        }
+        const deleteAcct = await agentModel.findByIdAndDelete(id) ||  await playerModel.findByIdAndDelete(id)
 
         if (!deleteAcct) {
             return res.status(400).json({
