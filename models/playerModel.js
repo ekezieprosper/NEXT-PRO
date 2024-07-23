@@ -58,15 +58,15 @@ const playerSchema = new mongoose.Schema({
 
     isVerified: { type: Boolean, default: false },
 
-
     followers: [{
         type: mongoose.Schema.Types.ObjectId,
+        default: 0,
         ref: 'agent'
-
     }],
 
     following: [{
         type: mongoose.Schema.Types.ObjectId,
+          default: 0,
         ref: 'agent'
     }],
 
