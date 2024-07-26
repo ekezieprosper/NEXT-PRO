@@ -3,17 +3,18 @@ require('dotenv').config()
 
 const sendEmail = async (options) => {
     const transporter = nodemailer.createTransport({
-        service: process.env.service,
+        service: process.env.SERVICE,
+        port: 587,
+        secure: false,
+
         auth: {
-            user: process.env.user,
-            pass: process.env.mailpass,
-            secure: true 
-        },
-        tls: {rejectUnauthorized: false}
+            user: process.env.USER,
+            pass: process.env.MAILPASS,
+        }
     })
 
-    let mailOptions = { 
-        from: process.env.user,
+    let mailOptions = {
+        from: process.env.USER,
         to: options.email,
         subject: options.subject,
         html: options.html,
@@ -27,4 +28,3 @@ const sendEmail = async (options) => {
 }
 
 module.exports = sendEmail
-
