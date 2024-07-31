@@ -1,33 +1,42 @@
 const commentModel = require('../models/commentModel')
+const playerModel = require("../models/playerModel")
+const agentModel = require("../models/agentModel")
+const notificationModel = require("../models/notificationModel")
 const postModel = require('../models/postModel')
 const storyModel = require('../models/stories')
 const emoji = require('node-emoji')
-
 
 
 exports.newComment = async (req, res) => {
   try {
     const id = req.user.userId
     const postId = req.params.postId
-    let {comment} = req.body
+    let { comment } = req.body
 
     if (!comment) {
       return res.status(400).json({
-        message: "No comment was created"
-      })
+         message: "input comment" 
+        })
+    }
+
+    // Fetch user and post
+    const user = await playerModel.findById(id) || await agentModel.findById(id)
+    if (!user) {
+      return res.status(404).json({
+         message: "User not found" 
+        })
     }
 
     let post = await postModel.findById(postId) || await storyModel.findById(postId)
     if (!post) {
       return res.status(404).json({
-        message: "Post not found"
-      })
+         message: "Post not found" 
+        })
     }
 
-    if (comment) {
-      comment = emoji.emojify(comment)
-    }
+    comment = emoji.emojify(comment)
 
+    // Create new comment
     const newComment = new commentModel({
       comment,
       owner: id,
@@ -36,16 +45,42 @@ exports.newComment = async (req, res) => {
 
     post.comments.push(newComment._id)
 
-    await Promise.all([post.save(), newComment.save()])
+    // Check if post owner is different from the comment owner
+    if (id !== post.owner.toString()) {
+ const owner = await (post.owner instanceof agentModel ? agentModel.findById(post.owner) : playerModel.findById(post.owner))
+      if (!owner) {
+        return res.status(404).json({
+           message: "Post owner not found" 
+          })
+      }
 
-    res.status(201).json({
-      comment: newComment.comment
+      const notification = `${user.userName} commented:${comment} on your post`
+      const Notification = {
+        notification,
+        recipient: post.owner,
+        recipientModel: owner instanceof agentModel ? 'agent' : 'player'
+      }
+
+      // Create and save notification
+      const message = new notificationModel(Notification)
+      await message.save()
+
+      // Add the notification to the post.owner's notifications list
+      owner.notifications.push(message._id)
+      await owner.save()
+    }
+
+    await Promise.all([
+      post.save(), newComment.save()
+    ])
+
+    res.status(201).json({ 
+      comment: newComment.comment 
     })
-
   } catch (error) {
     res.status(500).json({
-      error: 'Internal Server Error'
-    })
+       error: 'Internal Server Error' 
+      })
   }
 }
 
@@ -76,10 +111,10 @@ exports.getOnePostComment = async (req, res) => {
     }
 
     // Retrieve comments for the post
-    const comments = await commentModel.findOne({post: postId})
+    const comments = await commentModel.findOne({ post: postId })
 
     res.status(200).json({
-      id:comments._id,
+      id: comments._id,
       comment: comments.comment
     })
   } catch (error) {
@@ -115,7 +150,7 @@ exports.getAllPostComment = async (req, res) => {
     }
 
     // Retrieve all comments for the post
-    const allComments = await commentModel.find({post: postId})
+    const allComments = await commentModel.find({ post: postId })
 
     // If no comments found
     if (allComments.length === 0) {
@@ -142,7 +177,7 @@ exports.editComment = async (req, res) => {
   try {
     const id = req.user.userId
     const postId = req.params.postId
-    const {commentId, newComment} = req.body
+    const { commentId, newComment } = req.body
 
     // Validate input
     if (!newComment) {
@@ -181,8 +216,8 @@ exports.editComment = async (req, res) => {
     res.status(200).json(updatedComment.comment)
   } catch (error) {
     res.status(500).json({
-            error: "Internal server error"
-        })
+      error: "Internal server error"
+    })
   }
 }
 
@@ -214,11 +249,11 @@ exports.deleteCommentOnPost = async (req, res) => {
     }
 
     // Find commentId in the postModel
-    let post = await postModel.findOne({comments: commentId}) || await storyModel.findOne({comments: commentId})
+    let post = await postModel.findOne({ comments: commentId }) || await storyModel.findOne({ comments: commentId })
     //delete comment if found in the comment array of the post
     if (post) {
       post.comments.pull(commentId)
-      await post.save() 
+      await post.save()
     }
 
     // Delete the comment

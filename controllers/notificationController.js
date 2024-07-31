@@ -1,126 +1,90 @@
-const WebSocket = require('ws')
-const Notification = require('../models/notificationModel')
-const playerModel = require('../models/playerModel')
-const agentModel = require('../models/agentModel')
-const EventEmitter = require('events')
+const notificationModel = require("../models/notificationModel")
+const playerModel =  require("../models/playerModel")
+const agentModel =  require("../models/agentModel")
 
-class notificationController extends EventEmitter {
-  constructor(server) {
-    super()
-    this.wss = new WebSocket.Server({ server })
-    this.clients = {}
-    this.notifications = new Map()
 
-    this.wss.on('connection', (ws) => {
-      this.handleConnection(ws)
-    })
-  }
+// exports.getAllNotifications = async (req, res) => {
+//     try {
+//         const id = req.user.userId
 
-  handleConnection(ws) {
-    ws.on('message', async (message) => {
-      try {
-        const data = JSON.parse(message)
+// const user = await agentModel.findById(id).populate('notifications') || await playerModel.findById(id).populate('notifications')
 
-        if (data.type === 'userId') {
-          this.clients[data.userId] = ws
-          ws.userId = data.userId
-          this.sendToClient(ws, { type: 'init', time: new Date() })
-          return
+//         if (!user) {
+//             return res.status(404).json({
+//                 message: "User not found."
+//             })
+//         }
+
+//         res.status(200).json({
+//             id: user.notifications._id,
+//             notification: user.notifications.notification,
+//             date: user.notifications.Date
+//         })
+//     } catch (error) {
+//         res.status(500).json({
+//             message: error.message
+//         })
+//     }
+// }
+
+exports.getAllNotifications = async (req, res) => {
+    try {
+        const id = req.user.userId;
+
+        const user = await agentModel.findById(id).populate('notifications') || await playerModel.findById(id).populate('notifications');
+
+        if (!user) {
+            return res.status(404).json({
+                message: "User not found."
+            });
         }
 
-        switch (data.type) {
-          case 'new_post':
-            await this.saveNotification('new_post_notification', data.data)
-            this.broadcast({ type: 'new_post_notification', data: data.data })
-            break
-          case 'new_story':
-            await this.saveNotification('new_story_notification', data.data)
-            this.broadcast({ type: 'new_story_notification', data: data.data })
-            break
-          case 'new_like':
-          case 'new_comment':
-          case 'follow':
-          case 'unfollow':
-            await this.handleUserActionNotification(data.type, data.data)
-            break
-          case 'new_chat_message':
-            await this.handleNewChatMessage(data.data)
-            break
-          default:
-            console.warn(`Unhandled message type: ${data.type}`)
-            break
-        }
-      } catch (error) {
-        console.error('Error handling message:', error)
-      }
-    })
+        const notifications = user.notifications.map(notification => ({
+            id: notification._id,
+            notification: notification.notification, 
+            date: notification.Date 
+        }));
 
-    ws.on('close', () => {
-      if (ws.userId) {
-        delete this.clients[ws.userId]
-      }
-    })
-
-    ws.on('error', (error) => {
-      console.error('WebSocket error:', error)
-    })
-  }
-
-  async handleUserActionNotification(actionType, data) {
-    try {
-      const user = await playerModel.findById(data.userId) || await agentModel.findById(data.userId)
-      await this.saveNotification(`${actionType}_notification`, data)
-      this.sendToUser(user._id.toString(), { type: `${actionType}_notification`, data })
+        res.status(200).json(notifications);
     } catch (error) {
-      console.error('Error handling user action notification:', error)
+        res.status(500).json({
+            message: error.message
+        });
     }
-  }
-
-  async handleNewChatMessage(data) {
-    try {
-      const { userId, message } = data
-      await this.saveNotification('new_chat_message_notification', data)
-      this.sendToUser(userId.toString(), { type: 'new_chat_message_notification', data: message })
-    } catch (error) {
-      console.error('Error handling new chat message notification:', error)
-    }
-  }
-
-  async saveNotification(type, data) {
-    try {
-      const notification = new Notification({ type, data })
-      await notification.save()
-    } catch (error) {
-      console.error('Error saving notification:', error)
-    }
-  }
-
-  sendToUser(userId, message) {
-    const ws = this.clients[userId]
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify(message))
-    } else {
-      console.warn(`WebSocket not open for user ${userId}`)
-      if (!this.notifications.has(userId)) {
-        this.notifications.set(userId, [])
-      }
-      this.notifications.get(userId).push(message)
-    }
-  }
-
-  broadcast(message) {
-    Object.values(this.clients).forEach(ws => {
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify(message))
-      }
-    })
-  }
-
-  sendToClient(ws, message) {
-    if (ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify(message))
-    }
-  }
 }
 
-module.exports = notificationController
+
+exports.getNotificationById = async (req, res) => {
+    try {
+        const id = req.user.userId
+        const {notificationId} = req.params
+
+        const user = await agentModel.findById(id) || await playerModel.findById(id)
+
+        if (!user) {
+            return res.status(404).json({
+                message: "User not found."
+            })
+        }
+
+        // Check if the notification exists and belongs to the user
+        const notification = await notificationModel.findOne({ _id: notificationId, recipient: id })
+
+        if (!notification) {
+            return res.status(404).json({
+                message: "Notification not found"
+            })
+        }
+
+        // Return the single notification
+        res.status(200).json({
+            id: notification._id,
+            notification: notification.notification,
+            date: notification.Date
+        })
+    } catch (error) {
+        res.status(500).json({
+            message: error.message
+        })
+    }
+}

@@ -1,4 +1,8 @@
 const mongoose = require('mongoose')
+const {DateTime} = require('luxon')
+const createdOn = DateTime.now().toLocaleString({weekday:"short", hour:"2-digit",minute:"2-digit"})
+
+
 
 const messageSchema = new mongoose.Schema({
 
@@ -14,7 +18,10 @@ const messageSchema = new mongoose.Schema({
 
     reactions: [],
 
-    time: {type: Date, default: Date.now}
+    time: {
+       type: String,
+       default: createdOn
+    }
 })
 
 

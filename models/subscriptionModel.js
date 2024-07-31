@@ -1,5 +1,5 @@
 const mongoose = require('mongoose')
-
+const {DateTime} = require('luxon')
 
 const subscriptionSchema = new mongoose.Schema({
     plan: {
@@ -15,10 +15,9 @@ const subscriptionSchema = new mongoose.Schema({
         type: String
     },
 
-    date: {
-        type: Date,
-        default: Date.now
-    },
+    date: {type: Date,
+        default: () => DateTime.now().toJSDate()
+       },
 
     expiresIn: {
         type: Date
@@ -45,33 +44,37 @@ subscriptionSchema.pre('validate', function(next) {
     if (!this.expiresIn) {
         if (this.plan === 'monthly') {
             this.amount = 25
-            this.expiresIn = new Date(this.date.getTime() + 30 * 24 * 60 * 60 * 1000) 
+            this.expiresIn = new Date(this.date.getTime() + 30 * 24 * 60 * 60 * 1000) // 30 days
         } else if (this.plan === 'yearly') {
             this.amount = 200
-            this.expiresIn = new Date(this.date.getTime() + 365 * 24 * 60 * 60 * 1000)
+            this.expiresIn = new Date(this.date.getTime() + 365 * 24 * 60 * 60 * 1000) // 1 year
         }
     }
     next()
 })
 
-// check if the subscription is expired
+// Check if the subscription is expired
 subscriptionSchema.methods.isExpired = function() {
     return new Date() > this.expiresIn
 }
 
-// check and update expired subscriptions
+// Check and update expired subscriptions
 subscriptionSchema.statics.checkExpiredSubscriptions = async function() {
     try {
-        const expiredSubscriptions = await this.find({ expiresIn: { $lt: new Date() }, subscribed: true })
+        const expiredSubscriptions = await this.find({
+            expiresIn: { $lt: new Date() },
+            subscribed: true
+        })
 
-        await Promise.all(expiredSubscriptions.map(async subscription => {
+        await Promise.all(expiredSubscriptions.map(async (subscription) => {
             subscription.subscribed = false
             await subscription.save()
         }))
     } catch (error) {
-        error.message
+         error.message
     }
 }
+
 
 const Subscription = mongoose.model('Subscription', subscriptionSchema)
 module.exports = Subscription

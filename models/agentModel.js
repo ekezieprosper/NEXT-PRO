@@ -1,4 +1,6 @@
 const mongoose = require("mongoose")
+const {DateTime} = require('luxon')
+const createdOn = DateTime.now().toLocaleString({month:"short",day:"2-digit", year:"numeric"})
 
 const agentSchema = new mongoose.Schema({
     userName: {type: String, required: true, unique: true},
@@ -62,7 +64,15 @@ const agentSchema = new mongoose.Schema({
          ref: 'subscription'
         },
 
-     date: {type: Date, default: Date.now}
+    notifications:[{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'notification'
+    }],
+
+    Date: {
+        type: String,
+        default: createdOn
+       }
 
 })
 
@@ -70,7 +80,3 @@ const agentModel = mongoose.model("agent", agentSchema)
 
 
 module.exports = agentModel
-
-
-
-

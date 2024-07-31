@@ -1,10 +1,12 @@
 const mongoose = require("mongoose");
+const {DateTime} = require('luxon')
+const createdOn = DateTime.now().toLocaleString({month:"short",day:"2-digit"})
+
 
 const postSchema = new mongoose.Schema({
-    text: {
+    description: {
         type: String,
-         required: false,
-        date:Date.now
+         required: false
         },
 
     post: [{
@@ -13,8 +15,7 @@ const postSchema = new mongoose.Schema({
         }],
 
     likes: [{
-        type: String,
-        default: 0
+        type: mongoose.Schema.Types.ObjectId
     }],
 
     comments: [{
@@ -26,9 +27,9 @@ const postSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId
     },
 
-    date: {
-        type: Date,
-        default: Date.now
+    Date: {
+        type: String,
+        default: createdOn
     },
 
     player: {

@@ -1,4 +1,5 @@
 const mongoose = require('mongoose')
+const {DateTime} = require('luxon')
 
 const otpSchema = new mongoose.Schema({
 
@@ -9,8 +10,8 @@ const otpSchema = new mongoose.Schema({
 
     createdAt: {
         type: Date,
-        default: Date.now,
-        expires: (5 * 60 * 1000)
+        default: () => DateTime.now().toJSDate(),
+        expires: '5m'
     },
 
     playerId: [{

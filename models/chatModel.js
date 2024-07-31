@@ -1,27 +1,48 @@
 const mongoose = require('mongoose');
+const {DateTime} = require('luxon')
+const createdOn = DateTime.now().toLocaleString({month:"short",day:"2-digit", year:"numeric"})
+
 
 const chatSchema = new mongoose.Schema({
   
-    groupName: {type: String, 
-        required: false},
+    groupName: {
+        type: String, 
+        required: false,
+        default: ""
+      },
 
-        groupImage: {type: String, required: false},
+    groupImage: {
+      type: String, 
+      required: false
+    },
 
-         members:  [{ type: mongoose.Schema.Types.ObjectId}],
+    members: [{ type: mongoose.Schema.Types.ObjectId}],
 
-          admin: [{
-            type: mongoose.Schema.Types.ObjectId
-          }],
+    admin: [{
+      type: mongoose.Schema.Types.ObjectId
+     }],
 
-          creator: {
-            type: mongoose.Schema.Types.ObjectId
-          },
+    creator: {
+     type: mongoose.Schema.Types.ObjectId
+   },
 
-         block:[{
-            type: mongoose.Schema.Types.ObjectId
-          }],
+   block:[{
+     type: mongoose.Schema.Types.ObjectId
+   }],
 
-        time: {type: Date, default: Date.now}
+   blockedBy: [{
+    type: mongoose.Schema.Types.ObjectId
+  }],
+
+   chats:[{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'chatMessages'
+  }],
+
+    Date: {
+     type: String, 
+      default: createdOn
+    }
 
 })
 

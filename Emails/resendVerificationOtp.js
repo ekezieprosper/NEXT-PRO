@@ -83,7 +83,7 @@ const resendOtpEmail = (userName, otp, verificationLink) => {
                         <td style="padding: 2em 0; text-align: center; background-color: #ffffff;" class="padding-mobile">
                             <img src="https://res.cloudinary.com/dqjixyz71/image/upload/v1714691315/jmf6xunogjxcydxevfue.jpg" alt="Elite Football Logo" width="80" style="width: 80px; max-width: 80px; height: auto; margin: auto; display: block; border-radius: 50%;">   
                             <div style="text-align: left;">
-                                <h1 style="font-size: 20px; font-weight: 350; margin: 10px 0;">Hey, <b style="color: green; font-weight: 350">${userName}</b>!</h1><br>
+                                <h1 style="font-size: 20px; font-weight: 350; margin: 10px 0;">hey, <b style="color: green; font-weight: 350">${userName}</b>!</h1><br>
                             </div>
 
                              <div style="text-align: left;">

@@ -2,6 +2,7 @@ const chatModel = require("../models/chatModel")
 const messageModel = require("../models/messageModel")
 const playerModel = require("../models/playerModel")
 const agentModel = require("../models/agentModel")
+const notificationModel = require("../models/notificationModel")
 const cloudinary = require("../media/cloudinary")
 const emoji = require('node-emoji')
 const streamifier = require('streamifier')
@@ -40,7 +41,7 @@ exports.startChat = async (req, res) => {
     res.status(201).json({
       id: newChat._id,
       users: newChat.members,
-      createdAt: newChat.time
+      createdAt: newChat.Date
     })
 
   } catch (error) {
@@ -51,16 +52,19 @@ exports.startChat = async (req, res) => {
 }
 
 
-
 exports.createGroupChat = async (req, res) => {
   try {
     const id = req.user.userId
-    const {groupName, membersId} = req.body
+    const { groupName, membersId } = req.body
 
+    // Validate groupName
     if (!groupName || typeof groupName !== 'string') {
-      return res.status(400).json({ error: "Group name is required" })
+      return res.status(400).json({ 
+        error: "Group name is required" 
+      })
     }
 
+    // Validate membersId
     if (!Array.isArray(membersId)) {
       return res.status(400).json({ 
         error: "MembersId should be an array"
@@ -69,12 +73,19 @@ exports.createGroupChat = async (req, res) => {
 
     if (membersId.includes(id)) {
       return res.status(401).json({
-         error: "Cannot include your own ID in the membersId" 
-      })
+         error: "Cannot include your own ID in the membersId"
+         })
     }
 
-    const members = [id, ...membersId]
+    const user = await playerModel.findById(id) || await agentModel.findById(id)
+    if (!user) {
+      return res.status(404).json({
+         error: "User not found" 
+        })
+    }
 
+    // Create the group chat
+    const members = [id, ...membersId]
     const newGroupChat = await chatModel.create({
       groupName,
       members,
@@ -83,19 +94,46 @@ exports.createGroupChat = async (req, res) => {
     })
 
     res.status(201).json({
-      message: `${user.userName} created group "${groupName}"`,
+      message: `${user.userName} created this group "${groupName}"`,
       id: newGroupChat._id,
       groupName: newGroupChat.groupName,
       members: newGroupChat.members,
       admin: newGroupChat.admin,
       createdAt: newGroupChat.createdAt,
     })
+
+     // Send notifications to each member (excluding the creator)
+       const notificationPromises = membersId.map(async memberId => {
+        const member = await playerModel.findById(memberId) || await agentModel.findById(memberId)
+        if (!member) return
+  
+        const notification = `${user.userName} added you to "${groupName}"`
+        const Notification = {
+          notification,
+          recipient: member._id,
+          recipientModel: member instanceof agentModel ? 'agent' : 'player',
+        }
+  
+        // Create and save notification
+        const message = new notificationModel(Notification)
+        await message.save()
+  
+        // Add the notification to the member's notifications list
+        member.notifications.push(message._id)
+        await member.save()
+
+        return message
+      })
+  
+      await Promise.all(notificationPromises)
+
   } catch (error) {
-    res.status(500).json({ 
-      error: "Internal server error" 
-    })
+    res.status(500).json({
+       error: "Internal server error" 
+      })
   }
 }
+
 
 
 exports.createGroupImage = async (req, res) => {
@@ -185,7 +223,7 @@ exports.sendMessage = async (req, res) => {
 
     if (chat.block.includes(chatId)) {
       return res.status(400).json({
-        error: `This chat is blocked.You can't send message`
+        error: `This chat is blocked by ${chat.blockedBy}.You can't send message`
       })
     }
 
@@ -206,7 +244,9 @@ exports.sendMessage = async (req, res) => {
 
     // Validate that at least one of text or media is present
     if (!text && message.length === 0) {
-      return res.status(400).json({ error: "Either text or media must be provided." })
+      return res.status(400).json({ 
+        error: "Either text or media must be provided."
+       })
     }
 
     // Replace emoji shortcodes in text with actual emojis
@@ -225,7 +265,7 @@ exports.sendMessage = async (req, res) => {
       id: newMessage._id,
       media: newMessage.media,
       from: newMessage.sender,
-
+      time: newMessage.time
     }
 
     // Add text to response if it is included
@@ -234,6 +274,10 @@ exports.sendMessage = async (req, res) => {
     }
 
     res.status(201).json(response)
+
+    chat.chats.push(newMessage._id)
+      await chat.save()
+
   } catch (error) {
     res.status(500).json({
       error: "Internal server error"
@@ -256,7 +300,7 @@ if (!chat.members.includes(id) ) {
 
 if (chat.block.includes(chatId)) {
   return res.status(400).json({
-    error: `This chat is blocked. Therefore, you can't send vioce note`
+    error:  `This chat is blocked by ${chat.blockedBy}.You can't send message`
   })
 }
 
@@ -270,7 +314,12 @@ if (chat.block.includes(chatId)) {
 
     const streamUpload = (buffer) => {
       return new Promise((resolve, reject) => {
-        let stream = cloudinary.uploader.upload_stream({ resource_type: 'video', public_id: fileName, folder: 'voice_notes' },
+        let stream = cloudinary.uploader.upload_stream({ 
+          resource_type: 'video',
+           public_id: fileName,
+            folder: 'voice_notes' 
+          },
+          
           (error, result) => {
             if (result) {
               resolve(result)
@@ -292,7 +341,14 @@ if (chat.block.includes(chatId)) {
     })
     await message.save()
 
-    res.status(200).json(message.voice)
+    res.status(200).json({
+      voiceNote: message.voice,
+      time: message.time
+    })
+
+    chat.chats.push(message._id)
+      await chat.save()
+
   } catch (error) {
     res.status(500).json({
       error: "Internal server error"
@@ -428,10 +484,11 @@ exports.getChatmessage = async (req, res) => {
   }
 }
 
+
 exports.blockChat = async (req, res) => {
   try {
     const id = req.user.userId
-    const {chatId, blockUser} = req.body
+    const {chatId} = req.body
 
     // Check if the chat exists
     const chat = await chatModel.findById(chatId)
@@ -442,7 +499,7 @@ exports.blockChat = async (req, res) => {
     }
 
     // Check if the user is a member of the chat
-    if (!chat.members.includes(id) && !chat.members.includes(blockUser)) {
+    if (!chat.members.includes(id)) {
       return res.status(400).json({
         error: "Unauthorized"
       })
@@ -456,8 +513,15 @@ exports.blockChat = async (req, res) => {
     }
 
     // Block the chat  
-    chat.block.push(blockUser) &&  chat.block.push(chatId)
+    if (chat.groupName === "") {
+    chat.block.push(chatId)
+    chat.blockedBy.push(id)
     await chat.save()
+    }else{
+      return res.status(400).json({
+        message: "cannot block group chat"
+      })
+    }
 
     return res.status(200).json({
       message: "blocked"
@@ -474,7 +538,7 @@ exports.blockChat = async (req, res) => {
 exports.unblockChat = async (req, res) => {
   try {
     const id = req.user.userId
-    const {chatId, unBlockUser} = req.body
+    const { chatId } = req.body
 
     // Check if the chat exists
     const chat = await chatModel.findById(chatId)
@@ -484,17 +548,32 @@ exports.unblockChat = async (req, res) => {
       })
     }
 
-    // Check if the user is authorized to unblock
-    if (!chat.members.includes(id) || !chat.block.includes(chatId)) {
+    // Check if the user is a member of the chat
+    if (!chat.members.includes(id)) {
       return res.status(400).json({
-        error: "Unauthorized to unblock this chat"
+        error: "Unauthorized"
       })
     }
 
+    // Check if the chat is blocked
+    if (!chat.block.includes(chatId)) {
+      return res.status(400).json({
+        message: "Chat is not blocked"
+      })
+    }
+
+    // Check if the user is the one who blocked the chat
+    if (!chat.blockedBy || !chat.blockedBy.includes(id)) {
+      return res.status(403).json({
+        error: "Unauthorized"
+      })
+    }
+
+    // Unblock the chat
     // Remove the user and chat from block list
-    const indexUser = chat.block.indexOf(unBlockUser)
+    const indexUser = chat.blockedBy.indexOf(id)
     if (indexUser !== -1) {
-      chat.block.splice(indexUser, 1)
+      chat.blockedBy.splice(indexUser, 1)
     }
 
     const indexChat = chat.block.indexOf(chatId)
@@ -504,7 +583,7 @@ exports.unblockChat = async (req, res) => {
     await chat.save()
 
     return res.status(200).json({
-      message: "Unblocked"
+      message: "Chat unblocked"
     })
 
   } catch (error) {
@@ -513,6 +592,7 @@ exports.unblockChat = async (req, res) => {
     })
   }
 }
+
 
 
 exports.deleteMessage = async (req, res) => {
@@ -573,46 +653,57 @@ exports.deleteMessage = async (req, res) => {
 exports.addMembers = async (req, res) => {
   try {
     const id = req.user.userId
-    const {groupId, newMembers} = req.body
+    const { groupId, newMembers } = req.body
 
-    let user = await playerModel.findById(id) || await agentModel(id)
+    const user = await playerModel.findById(id) || await agentModel(id)
 
     if (!Array.isArray(newMembers)) {
       return res.status(400).json({
-         error: "Field should be an array" 
-        })
+        error: "Field should be an array"
+      })
     }
 
     const group = await chatModel.findById(groupId)
     if (!group) {
       return res.status(404).json({
-         error: "Chat not found" 
-        })
+        error: "Chat not found"
+      })
     }
 
     if (!group.admin.includes(id)) {
       return res.status(403).json({
-         error: "Unauthorized" 
-        })
+        error: "Unauthorized"
+      })
     }
 
     const newUniqueMembers = newMembers.filter(member => !group.members.includes(member))
     if (newUniqueMembers.length === 0) {
       return res.status(400).json({
-         message: "No new members to add" 
-        })
+        message: "No new members to add"
+      })
     }
+
+    // Fetch usernames of the new unique members
+    const newMembersUsernames = await Promise.all(
+      newUniqueMembers.map(async memberId => {
+        let member = await playerModel.findById(memberId) || await agentModel(memberId)
+        return member ? member.userName : null
+      })
+    )
+
+    // Filter out any null values in case some members were not found
+    const validUsernames = newMembersUsernames.filter(username => username !== null)
 
     group.members.push(...newUniqueMembers)
     await group.save()
 
     res.status(200).json({
-       message: `${user.userName} added new member(s)`
-       })
+      message: `${user.userName} added ${validUsernames.join(', ')} to the group`
+    })
   } catch (error) {
     res.status(500).json({
-       error: "Internal server error" 
-      })
+      error: "Internal server error"
+    })
   }
 }
 

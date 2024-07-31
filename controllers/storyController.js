@@ -3,17 +3,16 @@ const cloudinary = require("../media/cloudinary")
 const playerModel = require("../models/playerModel")
 const agentModel = require("../models/agentModel")
 const emoji = require('node-emoji')
-
+const notificationModel = require("../models/notificationModel")
 
 
 
 exports.createstory = async (req, res) => {
     try {
         const id = req.user.userId
-        let {text} = req.body
+        let { text } = req.body
 
-        // Fetch user from playerModel or agentModel
-        let user = await playerModel.findById(id) || await agentModel.findById(id)
+        const user = await playerModel.findById(id) || await agentModel.findById(id)
         if (!user) {
             return res.status(400).json({
                 error: "No user found."
@@ -22,22 +21,22 @@ exports.createstory = async (req, res) => {
 
         let media = []
         if (req.files && req.files.length > 0) {
-
-            media = await Promise.all(req.files.map(async (file) => {
-                try {
+            try {
+                media = await Promise.all(req.files.map(async (file) => {
                     const result = await cloudinary.uploader.upload(file.path, { resource_type: 'auto' })
                     return result.secure_url
-                } catch (uploadError) {
-                    return res.status(500).json({
-                        error: "Error uploading files"
-                    })
-                }
-            }))
+                }))
+            } catch (uploadError) {
+                return res.status(500).json({
+                    error: "Error uploading files."
+                })
+            }
         }
+
         // Validate that at least one of text or media is present
         if (!text && media.length === 0) {
             return res.status(400).json({
-                error: "No text or post was provided."
+                error: "No text or story was provided."
             })
         }
 
@@ -45,29 +44,48 @@ exports.createstory = async (req, res) => {
         if (text) {
             text = emoji.emojify(text)
         }
+   // Create a new story
+   const story = new storyModel({
+    text,
+    story: media,
+    owner: id
+    })
+    await story.save()
 
-        // Create a new post
-        const story = new storyModel({
-            text,
-            story: media,
-            owner: id,
-            time: new Date()
-        })
-        await story.save()
+    const response = {
+       id: story._id,
+        story: story.story,
+        likes: story.likes,
+       comments: story.comments,
+        views: story.views,
+       time: story.time
+    }
 
-        const response = {
-            id: story._id,
-            story: story.story,
-            likes: story.likes,
-            comments: story.comments,
-            views: story.views
-        }
-        // add text to response if it added along when posting
+    // Add text to response if it was provided
         if (text) {
-            response.text = text
-        }
+    response.text = text
+    }
 
         res.status(201).json(response)
+
+        // Notify all followers about the new story
+        const followers = user.followers
+        await Promise.all(followers.map(async followerId => {
+            const follower = await playerModel.findById(followerId) || await agentModel.findById(followerId)
+            if (follower) {
+                const recipientModel = follower instanceof agentModel ? 'agent' : 'player'
+                const notificationData = {
+                    notification: `${user.userName} just updated his story: ${story._id}.`,
+                    recipient: followerId,
+                    recipientModel: recipientModel
+                }
+                const message = new notificationModel(notificationData)
+                await message.save()
+
+                follower.notifications.push(message._id)
+                await follower.save()
+            }
+        }))
 
     } catch (error) {
         res.status(500).json({
@@ -75,7 +93,6 @@ exports.createstory = async (req, res) => {
         })
     }
 }
-
 
 
 exports.getstory = async (req, res) => {
@@ -163,7 +180,7 @@ exports.likestory = async (req, res) => {
           })
         }
 
-        // Find the post in the database by its ID
+        // Find the story in the database by its ID
         const story = await storyModel.findById(storyId)
         // Check if the story exists
         if (!story) {
@@ -182,10 +199,35 @@ exports.likestory = async (req, res) => {
         // Add the user's ID to the likes array
         story.likes.push(id)
 
-        // Save the updated post
+          // Check if story owner is different from the liker's owner
+    if (id !== story.owner.toString()) {
+        const owner = await (story.owner instanceof agentModel ? agentModel.findById(story.owner) : playerModel.findById(story.owner))
+             if (!owner) {
+               return res.status(404).json({
+                  message: "story owner not found" 
+                 })
+             }
+       
+             const notification = `${user.userName} likes your story`
+             const Notification = {
+               notification,
+               recipient: story.owner,
+               recipientModel: owner instanceof agentModel ? 'agent' : 'player'
+             }
+       
+             // Create and save notification
+             const message = new notificationModel(Notification)
+             await message.save()
+       
+             // Add the notification to the story.owner's notifications list
+             owner.notifications.push(message._id)
+             await owner.save()
+           }
+
+        // Save the updated story
         await story.save()
 
-        // Return the updated post
+        // Return the updated story
         res.status(200).json({
             likes: story.likes.length
         })
@@ -201,7 +243,7 @@ exports.unlikestory = async (req, res) => {
     try {
         const id = req.user.userId
 
-        // Retrieve post ID from request parameters
+        // Retrieve story ID from request parameters
         const storyId = req.params.storyId
 
         // Search for user in both playerModel and agentModel
@@ -236,11 +278,11 @@ exports.unlikestory = async (req, res) => {
         story.likes.splice(indexOfUser, 1)
 
         // Save the updated story
-        const updatedPost = await story.save()
+        const updatedstory = await story.save()
 
-        // Return the updated post
+        // Return the updated story
         res.status(200).json({
-            likes: updatedPost.likes.length
+            likes: updatedstory.likes.length
         })
     } catch (error) {
         res.status(500).json({
@@ -272,7 +314,7 @@ exports.deletestory = async (req, res) => {
             })
         }
 
-        // Check if the user is the owner of the post
+        // Check if the user is the owner of the story
         if (story.owner.toString() !== id) {
             return res.status(403).json({
                 error: "Unauthorized."

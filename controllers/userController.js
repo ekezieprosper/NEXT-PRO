@@ -1,5 +1,6 @@
 const playerModel = require("../models/playerModel")
 const agentModel = require("../models/agentModel")
+const notificationModel = require("../models/notificationModel")
 const OTPModel = require('../models/otpModel')
 const subscriptionModel = require("../models/subscriptionModel")
 const cloudinary = require("../media/cloudinary")
@@ -128,7 +129,7 @@ exports.signupAgent = async (req, res) => {
         }
 
         // Check if the email exists in the player's database
-        const Email = await playerModel.findOne({ email }).limit(1)
+        const Email = await playerModel.findOne({email}).limit(1)
 
         if (Email) {
             return res.status(403).json({
@@ -155,9 +156,9 @@ exports.signupAgent = async (req, res) => {
         }
 
         // check if user already exists in the database
-        let searchUsername = await agentModel.findOne({ userName }).limit(1)
+        let searchUsername = await agentModel.findOne({userName}).limit(1)
         if (!searchUsername) {
-            searchUsername = await playerModel.findOne({ userName }).limit(1)
+            searchUsername = await playerModel.findOne({userName}).limit(1)
         }
 
         // throw an error if user was found
@@ -428,7 +429,7 @@ exports.logIn = async (req, res) => {
         const token = jwt.sign({
             userId: user._id,
             userName: user.userName
-        }, process.env.jwtkey, { expiresIn: '30d' })
+        }, process.env.jwtkey, {expiresIn: '30d'})
 
         // Assign the token to the user and save
         user.tokens = token
@@ -926,7 +927,7 @@ exports.createProfileImg = async (req, res) => {
         }
 
         // Upload image to Cloudinary
-        const result = await cloudinary.uploader.upload(file.path, { resource_type: 'image' })
+        const result = await cloudinary.uploader.upload(file.path, {resource_type: 'image'})
 
         // Update user profile image URL
         user.profileImg = result.secure_url
@@ -1042,7 +1043,7 @@ exports.follow = async (req, res) => {
         }
 
         // Find the entity based on entityId in both agentModel and playerModel
-        let entity = await agentModel.findById(entityId) || await playerModel.findById(entityId)
+        const entity = await agentModel.findById(entityId) || await playerModel.findById(entityId)
         if (!entity) {
             return res.status(404).json({
                 error: "user not found."
@@ -1070,16 +1071,33 @@ exports.follow = async (req, res) => {
         // Update the followers list of the entity
         if (!Follow) {
             entity.followers.push(id)
+            const notification = `${user.userName} started following you`
+            const Notification = {
+                notification,
+                recipient: entity._id,
+                recipientModel: entity instanceof agentModel ? 'agent' : 'player'
+            }
+
+            if (entity instanceof agentModel) {
+
+                Notification.agent = entity._id
+
+            } else if (entity instanceof playerModel) {
+
+                Notification.player = entity._id
+            }
+
+            const message = new notificationModel(Notification)
+            await message.save()
+
+            // Add the notification to the entity's notifications list
+            entity.notifications.push(message._id)
         }
 
         // Save changes
         await Promise.all([user.save(), entity.save()])
 
         return res.status(200).json({
-            new_follow: [
-                entity._id,
-                entity.userName
-            ],
             followers: entity.followers.length
         })
     } catch (error) {
@@ -1405,7 +1423,7 @@ exports.getAllFollowing = async (req, res) => {
 exports.subscription = async (req, res) => {
     try {
         const id = req.user.userId
-        const { plan } = req.body
+        const {plan} = req.body
 
         if (!plan) {
             return res.status(400).json({

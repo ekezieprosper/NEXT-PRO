@@ -23,42 +23,21 @@ const authenticate = async (req, res, next) => {
 
     const decodedToken = jwt.verify(token, process.env.jwtkey)
 
-    let user = await agentModel.findById(decodedToken.userId)
-    if (!user) {
-      user = await playerModel.findById(decodedToken.userId)
-    }
+    const user = await agentModel.findById(decodedToken.userId) || await playerModel.findById(decodedToken.userId)
 
     if (!user) {
       return res.status(404).json({
         error: "Unauthorized",
       })
-    }
-
-    const timeCreated = new Date(user.date)
-    const logoutTime = new Date(timeCreated.getTime() + 30 * 24 * 60 * 60 * 1000)
-    const currentTime = new Date()
-
-    if (currentTime > logoutTime) {
-      await agentModel.findByIdAndUpdate(user._id,{tokens:null}) ||
-     await playerModel.findByIdAndUpdate(user._id,{tokens:null})
-     
-      return res.status(400).json({
-        error: `Session expired. please login`,
-      })
-    }
-
-    if (!user.tokens) {
-      return res.status(401).json({
-        error: `Session expired. Login to ${user.userName}`,
-      })
-    }
+    }   
 
     req.user = decodedToken
     next()
   } catch (error) {
     if (error instanceof jwt.JsonWebTokenError) {
+  
       return res.status(401).json({
-        error: "Expired token",
+        error:  `Expired session. Login`,
       })
     }
 

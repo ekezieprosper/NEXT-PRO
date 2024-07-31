@@ -1,4 +1,7 @@
 const mongoose = require("mongoose")
+const {DateTime} = require('luxon')
+const createdOn = DateTime.now().toLocaleString({hour:"2-digit",minute:"2-digit"})
+
 
 const storySchema = new mongoose.Schema({
     text: {
@@ -12,8 +15,7 @@ const storySchema = new mongoose.Schema({
     }],
     
     likes: [{
-        type: String,
-        default: 0
+        type: mongoose.Schema.Types.ObjectId
     }],
 
     comments: [{
@@ -27,8 +29,13 @@ const storySchema = new mongoose.Schema({
     
     date: {
         type: Date,
-        default: Date.now,
-        expires: (24 * 60 * 60 * 1000)
+        default: () => DateTime.now().toJSDate(),
+        expires: '24h'
+    },
+
+    time: {
+        type: String,
+        default: createdOn
     },
 
     owner: {

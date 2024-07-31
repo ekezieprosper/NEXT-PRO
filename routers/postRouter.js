@@ -1,5 +1,5 @@
 const router = require("express").Router()
-const { getPost, deletePost, getPostByDescription, getAllPosts, likePost, unlikePost, createPost, downloadPost } = require("../controllers/postController")
+const { getPost, deletePost, getPostByDescription, getAllPosts, likePost, unlikePost, createPost } = require("../controllers/postController")
 const uploader = require("../media/multerFiles")
 const authenticate = require("../auth/authenticate")
 

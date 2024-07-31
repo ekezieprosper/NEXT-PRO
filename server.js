@@ -4,12 +4,13 @@ const cors = require("cors")
 const http = require("http")
 
 const Calls = require("./controllers/calls")
-const notificationController = require('./controllers/notificationController')
 const userRouter = require("./routers/userRouter")
 const postRouter = require("./routers/postRouter")
 const commentRouter = require("./routers/commentRouter")
 const chatRouter = require("./routers/chatRouter")
 const storyRouter = require("./routers/storyRouter")
+const notificationRouter = require("./routers/notificationRouter")
+
 
 require("./config/config")
 require("dotenv").config()
@@ -27,6 +28,8 @@ app.use("/elitefootball", postRouter)
 app.use("/elitefootball", commentRouter)
 app.use("/elitefootball", chatRouter)
 app.use("/elitefootball", storyRouter)
+app.use("/elitefootball", notificationRouter)
+
 
 const io = socket(server, {
   cors: {
@@ -47,14 +50,6 @@ io.on("connection", (socket) => {
     messages.set(userId, socket.id)
   })
 
-  socket.on("send-msg", (data) => {
-    const sendUserSocket = messages.get(data.to)
-    if (sendUserSocket) {
-      socket.to(sendUserSocket).emit("msg-recieve", data.msg)
-      
-      notificationController.sendNotification(data.to, "You have a new message!", messages)
-    }
-  })
 
   socket.on("new-user", (data) => {
     onlineUsers.set(data.userId, data)
@@ -67,10 +62,6 @@ io.on("connection", (socket) => {
     }
   })
 
-  socket.on("get-notifications", (userId) => {
-    const userNotifications = notificationController.getNotifications(userId)
-    socket.emit("notifications-recieve", userNotifications)
-  })
 
   socket.on("call-user", (data) => {
     const sendUserSocket = messages.get(data.to)
