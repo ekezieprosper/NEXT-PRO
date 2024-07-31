@@ -3,29 +3,6 @@ const playerModel =  require("../models/playerModel")
 const agentModel =  require("../models/agentModel")
 
 
-// exports.getAllNotifications = async (req, res) => {
-//     try {
-//         const id = req.user.userId
-
-// const user = await agentModel.findById(id).populate('notifications') || await playerModel.findById(id).populate('notifications')
-
-//         if (!user) {
-//             return res.status(404).json({
-//                 message: "User not found."
-//             })
-//         }
-
-//         res.status(200).json({
-//             id: user.notifications._id,
-//             notification: user.notifications.notification,
-//             date: user.notifications.Date
-//         })
-//     } catch (error) {
-//         res.status(500).json({
-//             message: error.message
-//         })
-//     }
-// }
 
 exports.getAllNotifications = async (req, res) => {
     try {
