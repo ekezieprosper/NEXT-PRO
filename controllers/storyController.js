@@ -75,7 +75,7 @@ exports.createstory = async (req, res) => {
             if (follower) {
                 const recipientModel = follower instanceof agentModel ? 'agent' : 'player'
                 const notificationData = {
-                    notification: `${user.userName} just updated his story: ${story._id}.`,
+                    notification: `${user.userName} updated ${user.gender === 'male' ? 'his' : 'her'} story: ${story._id}.`,
                     recipient: followerId,
                     recipientModel: recipientModel
                 }

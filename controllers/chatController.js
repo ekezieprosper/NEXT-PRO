@@ -601,7 +601,7 @@ exports.deleteMessage = async (req, res) => {
     const {messageId} = req.body
 
     // Find the user
-    const user = await playerModel.findById(id)
+    const user = await playerModel.findById(id) || await agentModel.findById(id)
     if (!user) {
       return res.status(404).json({
         error: 'User not found'
