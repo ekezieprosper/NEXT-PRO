@@ -6,27 +6,27 @@ const agentModel =  require("../models/agentModel")
 
 exports.getAllNotifications = async (req, res) => {
     try {
-        const id = req.user.userId;
+        const id = req.user.userId
 
-        const user = await agentModel.findById(id).populate('notifications') || await playerModel.findById(id).populate('notifications');
+        const user = await agentModel.findById(id).populate('notifications') || await playerModel.findById(id).populate('notifications')
 
         if (!user) {
             return res.status(404).json({
                 message: "User not found."
-            });
+            })
         }
 
         const notifications = user.notifications.map(notification => ({
             id: notification._id,
             notification: notification.notification, 
             date: notification.Date 
-        }));
+        }))
 
-        res.status(200).json(notifications);
+        res.status(200).json(notifications)
     } catch (error) {
         res.status(500).json({
             message: error.message
-        });
+        })
     }
 }
 
@@ -63,5 +63,46 @@ exports.getNotificationById = async (req, res) => {
         res.status(500).json({
             message: error.message
         })
+    }
+}
+
+
+exports.deleteNotification = async (req, res) => {
+    try {
+        const id = req.user.userId
+        const { notificationId } = req.params
+
+        const user = await playerModel.findById(id) || await agentModel.findById(id)
+
+        if (!user) {
+            return res.status(404).json({
+                 error: "User not found" 
+                })
+        }
+
+        const deleteNotification = await notificationModel.findByIdAndDelete(notificationId)
+
+        if (!deleteNotification) {
+            return res.status(404).json({
+                 error: "Notification not found" 
+                })
+        }
+
+        // Remove the notification ID from the user notifications array
+        const indexNotification = user.notifications.indexOf(notificationId)
+
+        if (indexNotification !== -1) {
+            user.notifications.splice(indexNotification, 1)
+            await user.save()
+        }
+
+        return res.status(200).json({
+             message: "Deleted"
+             })
+
+    } catch (error) {
+        return res.status(500).json({
+             message: error.message 
+            })
     }
 }
