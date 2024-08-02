@@ -30,7 +30,7 @@ router.post('/verify_code/:id', verifyPasswordOTP)
 router.post('/reset_password/:id', resetPassword)
 router.put('/change_password', authenticate, changePassword)
 router.post("/subscribe", authenticate, subscription)
-router.get("/get/subscription", authenticate, getSubscription)
+router.get("/subscription", authenticate, getSubscription)
 router.delete('/delete_account', authenticate, deleteAccount)
 
 

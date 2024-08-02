@@ -32,7 +32,8 @@ const agentSchema = new mongoose.Schema({
      
     relationship_status: {
         type: String,
-        enum: ["single", "married", "In a relationship"]
+        enum: ["single", "married", "In a relationship"],
+         default: "single"
     },
 
     isVerified: { type: Boolean, default: false },

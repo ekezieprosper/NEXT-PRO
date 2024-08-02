@@ -859,52 +859,56 @@ exports.updateUserProfile = async (req, res) => {
 
         const { name, locatedAt, phoneNumber, Birthday, Bio, relationship_status } = req.body
 
-        if (name.length < 3) {
+        // Initialize an update object
+        const updateFields = {}
+
+        // Add fields to the update object only if they are provided (including empty strings)
+        if (name !== undefined) {
+            if (name.length > 0 && name.length < 3) {
+                return res.status(400).json({
+                    error: "Name is too short"
+                })
+            }
+            updateFields.name = name
+        }
+        if (locatedAt !== undefined) updateFields.locatedAt = locatedAt
+        if (phoneNumber !== undefined) updateFields.phoneNumber = phoneNumber
+        if (Birthday !== undefined) updateFields.Birthday = Birthday
+        if (Bio !== undefined) updateFields.Bio = Bio
+        if (relationship_status !== undefined) updateFields.relationship_status = relationship_status
+
+        // Try updating the user in the agentModel
+        let user = await agentModel.findByIdAndUpdate(id, updateFields, { new: true })
+
+        // If user is not found in agentModel, try updating in playerModel
+        if (!user) {
+            user = await playerModel.findByIdAndUpdate(id, updateFields, { new: true })
+        }
+
+        // If user is still not found, return an error
+        if (!user) {
             return res.status(400).json({
-                error: "Too short"
+                error: "An unexpected error occurred while updating profile."
             })
         }
 
-        let user = await agentModel.findByIdAndUpdate(id, {
-            name,
-            locatedAt,
-            phoneNumber,
-            Birthday,
-            Bio,
-            relationship_status
-        }, { new: true })
-
-        if (!user) {
-            user = await playerModel.findByIdAndUpdate(id, {
-                name,
-                locatedAt,
-                phoneNumber,
-                Birthday,
-                Bio,
-                relationship_status
-            }, { new: true })
-        }
-
-        if (!user) {
-            return res.status(400).json({
-                error: `an unexpected error occured while updating profile`
-            })
-        }
-
+        // Return the updated user information, ensuring default values are returned if the fields are undefined
         res.status(200).json({
-            name: user.name,
-            locatedAt: user.locatedAt,
-            phoneNumber: user.phoneNumber,
-            Birthday: user.Birthday,
-            Bio: user.Bio,
-            relationship_status: user.relationship_status
+            name: user.name !== undefined ? user.name : "Default Name",
+            locatedAt: user.locatedAt !== undefined ? user.locatedAt : "Default Location",
+            phoneNumber: user.phoneNumber !== undefined ? user.phoneNumber : "Default Phone Number",
+            Birthday: user.Birthday !== undefined ? user.Birthday : "Default Birthday",
+            Bio: user.Bio !== undefined ? user.Bio : "Default Bio",
+            relationship_status: user.relationship_status !== undefined ? user.relationship_status : "Default Relationship Status"
         })
     } catch (error) {
+        // Handle any errors
         res.status(500).json({
             error: "Bad internet connection."
         })
     }
 }
+
 
 
 exports.createProfileImg = async (req, res) => {
