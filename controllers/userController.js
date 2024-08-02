@@ -1454,6 +1454,7 @@ exports.subscription = async (req, res) => {
             message: `subscription for $${subscription.amount} oneOff ${plan} plan was successfull.`,
             id: subscription._id,
             plan: subscription.plan,
+            subscribedAt: subscription.Date,
             expires_in: `${subscription.expiresIn}`
 
         })
@@ -1469,10 +1470,10 @@ exports.getSubscription = async (req, res) => {
     try {
         const id = req.user.userId
 
-        let user = await playerModel.findById(id) || await agentModel.findById(id)
+        const user = await playerModel.findById(id) || await agentModel.findById(id)
 
         // Find the subscription by owner ID
-        const subscription = await subscriptionModel.findOne({ owner: id })
+        const subscription = await subscriptionModel.findOne({owner: id})
 
         if (id !== subscription.owner) {
             return res.status(401).json({
@@ -1497,7 +1498,7 @@ exports.getSubscription = async (req, res) => {
         }
 
         return res.status(200).json({
-            message: `valid till ${subscription.expiresIn}`
+            message: `You have a active subscription. valid till ${subscription.expiresIn}`
         })
 
     } catch (error) {

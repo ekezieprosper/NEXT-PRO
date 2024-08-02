@@ -1,5 +1,6 @@
 const mongoose = require('mongoose')
 const {DateTime} = require('luxon')
+const createdOn = DateTime.now().toLocaleString({month:"short",day:"2-digit", year:"numeric", hour:"2-digit",minute:"2-digit"})
 
 const subscriptionSchema = new mongoose.Schema({
     plan: {
@@ -15,9 +16,15 @@ const subscriptionSchema = new mongoose.Schema({
         type: String
     },
 
-    date: {type: Date,
-        default: () => DateTime.now().toJSDate()
-       },
+    date: {
+        type: Date,
+        default: Date.now()
+    },
+
+    Date:{
+        type: String,
+       default: createdOn
+   }, 
 
     expiresIn: {
         type: Date
@@ -43,10 +50,10 @@ const subscriptionSchema = new mongoose.Schema({
 subscriptionSchema.pre('validate', function(next) {
     if (!this.expiresIn) {
         if (this.plan === 'monthly') {
-            this.amount = 25
+            this.amount = 15
             this.expiresIn = new Date(this.date.getTime() + 30 * 24 * 60 * 60 * 1000) // 30 days
         } else if (this.plan === 'yearly') {
-            this.amount = 200
+            this.amount = 180
             this.expiresIn = new Date(this.date.getTime() + 365 * 24 * 60 * 60 * 1000) // 1 year
         }
     }
