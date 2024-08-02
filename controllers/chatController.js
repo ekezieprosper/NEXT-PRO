@@ -93,6 +93,8 @@ exports.createGroupChat = async (req, res) => {
       creator: id,
     })
 
+    newGroupChat.creator.push(id)
+
     res.status(201).json({
       message: `${user.userName} created this group "${groupName}"`,
       id: newGroupChat._id,
@@ -820,14 +822,14 @@ exports.removeMembers = async (req, res) => {
     const {groupId, removeMember} = req.body
 
     // Find the authenticated user in either playerModel or agentModel
-    let user = await playerModel.findById(id) || await agentModel.findById(id)
+    const user = await playerModel.findById(id) || await agentModel.findById(id)
     if (!user) {
       return res.status(404).json({
         error: "User not found"
       })
     }
 
-    let remove = await playerModel.findById(removeMember) || await agentModel.findById(removeMember)
+    const remove = await playerModel.findById(removeMember) || await agentModel.findById(removeMember)
 
     // Find the group by groupId
     const group = await chatModel.findById(groupId)
@@ -893,18 +895,20 @@ exports.exitGroup = async (req, res) => {
     const id = req.user.userId
 
     if (!id) {
-      return res.status(404).json({
-        error: "Session expired. Login"
+      return res.status(401).json({
+        error: "Session expired. Please log in again."
       })
     }
 
     // Fetch user from database
-    let user = await playerModel.findById(id)
+    const user = await playerModel.findById(id) || await agentModel.findById(id)
     if (!user) {
-      user = await agentModel.findById(id)
+      return res.status(404).json({
+        error: "User not found."
+      })
     }
 
-    const {groupId} = req.body
+    const { groupId } = req.body
 
     // Fetch the group by ID
     const group = await chatModel.findById(groupId)
@@ -912,37 +916,48 @@ exports.exitGroup = async (req, res) => {
     // Check if the group exists
     if (!group) {
       return res.status(404).json({
-        error: "Group not found"
+        error: "Group not found."
       })
     }
 
-    // Check if the user is a member in the chat
+    // Check if the user is a member of the group
     if (!group.members.includes(id)) {
-      return res.status(400).json({
-        error: `not a member of this group`
+      return res.status(403).json({
+        error: "You are not a member of this group."
       })
     }
 
-    const userName = user.userName
 
     // Remove the user from the group's members list
     group.members = group.members.filter(memberId => memberId.toString() !== id)
 
-    // check if the user is an admin and remove 
+    // Remove the user from the admin list if they are an admin
     if (group.admin.includes(id)) {
-      group.admin = group.admin.filter(memberId => memberId.toString() !== id)
+      group.admin = group.admin.filter(adminId => adminId.toString() !== id)
     }
 
-    // Save the updated group details
+    if (group.creator.includes(id)) {
+      group.creator = group.creator.filter(creatorId => creatorId.toString() !== id)
+    }
+     
+    // If the user is the last member, delete the group
+    if (group.members.length === 0) {
+      await chatModel.findByIdAndDelete(groupId)
+      return res.status(200).json({
+        message: "Group deleted as you were the last member."
+      })
+    }
+
+    // Save the updated group
     await group.save()
 
     res.status(200).json({
-      message: `${userName} left the group`
+      message: `${user.userName} left the group.`
     })
 
   } catch (error) {
     res.status(500).json({
-      error: "Internal server error"
+      error: "Internal server error."
     })
   }
 }

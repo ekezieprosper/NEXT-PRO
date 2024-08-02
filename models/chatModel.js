@@ -22,9 +22,9 @@ const chatSchema = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId
      }],
 
-    creator: {
+    creator: [{
      type: mongoose.Schema.Types.ObjectId
-   },
+   }],
 
    block:[{
      type: mongoose.Schema.Types.ObjectId
