@@ -495,6 +495,7 @@ exports.logOut = async (req, res) => {
 
 exports.forgotPassword = async (req, res) => {
     try {
+        const {id} = req.params
         const { email } = req.body
 
         // Validate email
@@ -505,7 +506,7 @@ exports.forgotPassword = async (req, res) => {
         }
 
         // Find user by email in either agent or player collection
-        const foundUser = await agentModel.findOne({ email }) || await playerModel.findOne({ email })
+        const foundUser = await agentModel.findOne({ email, _id:id }) || await playerModel.findOne({email, _id:id })
 
         if (!foundUser) {
             return res.status(404).json({
