@@ -4,8 +4,8 @@ const playerModel = require("../models/playerModel")
 const agentModel = require("../models/agentModel")
 const notificationModel = require("../models/notificationModel")
 const emoji = require('node-emoji')
-const {DateTime} = require('luxon')
-const createdOn = DateTime.now().toLocaleString({day:"2-digit", month:"short"})
+const { DateTime } = require('luxon')
+const createdOn = DateTime.now().toLocaleString({ day: "2-digit", month: "short" })
 
 
 
@@ -60,7 +60,7 @@ exports.createPost = async (req, res) => {
             post: post.post,
             likes: post.likes,
             comments: post.comments,
-            date: post.Date 
+            date: post.Date
         }
 
         // Add description to response if it was provided
@@ -115,7 +115,14 @@ exports.getPost = async (req, res) => {
             })
         }
 
-        res.status(200).json(post)
+        res.status(200).json({
+            post: post.post,
+            description: post.description,
+            likes: post.likes,
+            comments: post.comments,
+            owner: post.owner,
+            Date: post.Date,
+        })
 
     } catch (error) {
         res.status(500).json({
@@ -142,7 +149,14 @@ exports.getAllPosts = async (req, res) => {
                 error: "no post found"
             })
         }
-        res.status(200).json(posts)
+        res.status(200).json({
+            post: posts.post,
+            description: posts.description,
+            likes: posts.likes,
+            comments: posts.comments,
+            owner: posts.owner,
+            Date: posts.Date,
+        })
 
     } catch (error) {
         res.status(500).json({
@@ -162,22 +176,29 @@ exports.getPostByDescription = async (req, res) => {
             })
         }
 
-        const {description} = req.body
+        const { description } = req.body
 
         if (!description || description.trim() === '') {
             return res.status(400).json({
-                 error: "description is required"
-          })
+                error: "description is required"
+            })
         }
 
-        const post = await postModel.findOne({description: { $regex: new RegExp(description, "i") }})
+        const post = await postModel.findOne({ description: { $regex: new RegExp(description, "i") } })
         if (!post) {
             return res.status(404).json({
                 error: `No post with description '${description}' was found`
             })
         }
 
-        res.status(200).json(post)
+        res.status(200).json({
+            post: post.post,
+            description: post.description,
+            likes: post.likes,
+            comments: post.comments,
+            owner: post.owner,
+            Date: post.Date,
+        })
 
     } catch (error) {
         res.status(500).json({
@@ -219,32 +240,32 @@ exports.likePost = async (req, res) => {
 
         // Add the user's ID to the likes array
         post.likes.push(id)
- 
-        
-    // Check if post owner is different from the liker's owner
-    if (id !== post.owner.toString()) {
-        const owner = await (post.owner instanceof agentModel ? agentModel.findById(post.owner) : playerModel.findById(post.owner))
-             if (!owner) {
-               return res.status(404).json({
-                  message: "Post owner not found" 
-                 })
-             }
-       
-             const notification = `${user.userName} likes your post`
-             const Notification = {
-               notification,
-               recipient: post.owner,
-               recipientModel: owner instanceof agentModel ? 'agent' : 'player'
-             }
-       
-             // Create and save notification
-             const message = new notificationModel(Notification)
-             await message.save()
-       
-             // Add the notification to the post.owner's notifications list
-             owner.notifications.push(message._id)
-             await owner.save()
-           }
+
+
+        // Check if post owner is different from the liker's owner
+        if (id !== post.owner.toString()) {
+            const owner = await (post.owner instanceof agentModel ? agentModel.findById(post.owner) : playerModel.findById(post.owner))
+            if (!owner) {
+                return res.status(404).json({
+                    message: "Post owner not found"
+                })
+            }
+
+            const notification = `${user.userName} likes your post`
+            const Notification = {
+                notification,
+                recipient: post.owner,
+                recipientModel: owner instanceof agentModel ? 'agent' : 'player'
+            }
+
+            // Create and save notification
+            const message = new notificationModel(Notification)
+            await message.save()
+
+            // Add the notification to the post.owner's notifications list
+            owner.notifications.push(message._id)
+            await owner.save()
+        }
 
         // Save the updated post
         const updatedPost = await post.save()
@@ -323,7 +344,7 @@ exports.deletePost = async (req, res) => {
             })
         }
 
-    // Check if the user is the owner of the post
+        // Check if the user is the owner of the post
         if (post.owner.toString() !== id) {
             return res.status(403).json({
                 error: "Unauthorized"

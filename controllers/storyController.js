@@ -130,7 +130,15 @@ exports.getstory = async (req, res) => {
             await story.save()
         }
 
-        res.status(200).json(story)
+        res.status(200).json({
+            story: story.story,
+            text: story.text,
+            likes: story.likes,
+            comments: story.comments,
+            views: story.views,
+            owner: story.owner,
+            time: story.time,
+        })
 
     } catch (error) {
         res.status(500).json({
@@ -157,7 +165,15 @@ exports.getAllstorys = async (req, res) => {
             return res.status(200).json(null)
         }
 
-        res.status(200).json(story)
+        res.status(200).json({
+            story: story.story,
+            text: story.text,
+            likes: story.likes,
+            comments: story.comments,
+            views: story.views,
+            owner: story.owner,
+            time: story.time,
+        })
 
     } catch (error) {
         res.status(500).json({
