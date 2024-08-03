@@ -155,7 +155,7 @@ exports.getAllPosts = async (req, res) => {
             likes: posts.likes,
             comments: posts.comments,
             owner: posts.owner,
-            Date: posts.Date,
+            Date: posts.Date
         })
 
     } catch (error) {
@@ -197,7 +197,7 @@ exports.getPostByDescription = async (req, res) => {
             likes: post.likes,
             comments: post.comments,
             owner: post.owner,
-            Date: post.Date,
+            Date: post.Date
         })
 
     } catch (error) {
