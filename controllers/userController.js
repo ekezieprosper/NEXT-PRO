@@ -278,8 +278,7 @@ exports.resendOTP = async (req, res) => {
         const html = resendOtpEmail(user.userName, otp, verificationLink)
         await sendEmail({ email: user.email, subject, text, html })
 
-
-
+        // return success response
         return res.status(200).json({
             message: "check your email address"
         })
