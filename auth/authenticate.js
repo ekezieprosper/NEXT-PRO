@@ -21,10 +21,28 @@ const authenticate = async (req, res, next) => {
       })
     }
 
-    const decodedToken = jwt.verify(token, process.env.jwtkey)
+    const decodedToken = jwt.verify(token, process.env.jwtkey, (error,payload)=>{
+            if(error){
+              return error
+            }
+            return payload
+        });
+
+        if(decodedToken.name === "TokenExpiredError"){
+            return res.status(400).json({
+                error:"user logged Out... please login to continue"
+            })
+        }else if(decodedToken.name === "JsonWebTokenError"){
+            return res.status(400).json({
+                error:"Invalid Token"
+            })
+        }else if(decodedToken.name === "NotBeforeError"){
+            return res.status(400).json({
+                error:"Token not active"
+            })
+        }
 
     const user = await agentModel.findById(decodedToken.userId) || await playerModel.findById(decodedToken.userId)
-
     if (!user) {
       return res.status(404).json({
         error: "Unauthorized",
@@ -34,13 +52,6 @@ const authenticate = async (req, res, next) => {
     req.user = decodedToken
     next()
   } catch (error) {
-    if (error instanceof jwt.JsonWebTokenError) {
-  
-      return res.status(401).json({
-        error:  `Expired session. Login`,
-      })
-    }
-
     res.status(500).json({
       error: error.message,
     })

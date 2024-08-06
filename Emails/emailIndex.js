@@ -95,7 +95,7 @@ const DynamicEmail = (userName, otp, verificationLink) => {
                                     <p>otp code: <b>${otp}</b></p>
                                 </h3><br>
                             </div>
-                                <hr><p style="margin-left:2mm; font-size: 12px; color: #909090;">© ${new Date().getFullYear()} elitefootball. 203 Muyibi Str, Lagos, Nigeria</p>
+                                <hr><p style="margin-left:2mm; font-size: 12px; color: #909090;">© ${new Date().getFullYear()} elitefootball.</p>
                         </td>
                     </tr>
                 </table>

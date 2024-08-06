@@ -1,44 +1,29 @@
-const Joi = require('@hapi/joi')
+const Joi = require("@hapi/joi")
 
-const playerValidation = (req, res, next) => {
-  const validation = Joi.object({
+const signUp = (req, res, next) => {
+  const validateSignup = Joi.object({
     userName: Joi.string()
       .required().min(8)
        // Regex pattern allowing lowercase letters, numbers, underscore, and hyphen
       .pattern(new RegExp('^[a-z0-9_.-]+$'))
       .messages({
         'string.base': 'Username must be a string',
-        'string.empty': 'Username is required',
-        'string.min': 'Name must be at least {#limit} characters long',
-        'string.pattern.base': 'Username must contain only lowercase letters, numbers, underscores, and hyphens',
+        'string.empty': 'Username cannot be empty',
+        'string.min': 'userame must be at least {#limit} characters long',
+        'string.pattern.base': 'Only numbers, hyphens, and underscores can be added if needed',
         'any.required': 'Username is required'
       }),
 
-    name: Joi.string().min(3).max(30).required().messages({
-      'string.base': 'Name must be a string',
-      'string.empty': 'Name is required',
-      'string.min': 'Name must be at least {#limit} characters long',
-      'string.max': 'Name cannot be longer than {#limit} characters',
-      'any.required': 'Name is required'
-    }),
-
     email: Joi.string().email().required().messages({
       'string.base': 'Email must be a string',
-      'string.empty': 'Email is required',
+      'string.empty': 'Email cannot be empty',
       'string.email': 'Invalid email address',
       'any.required': 'Email is required'
     }),
 
-    phoneNumber: Joi.string().pattern(new RegExp('^[0-9]{11}$')).required().messages({
-      'string.base': 'Phone number must be a string',
-      'string.empty': 'Phone number is required',
-      'string.pattern.base': 'Phone number must be a valid 11-digit number',
-      'any.required': 'Phone number is required'
-    }),
-
     password: Joi.string().required().min(8).max(30).messages({
       'string.base': 'Password must be a string',
-      'string.empty': 'Password is required',
+      'string.empty': 'Password cannot be empty',
       'string.min': 'Password must be a minimum of {#limit} characters',
       'string.max': 'Password must be a maximum of {#limit} characters',
       'any.required': 'Password is required'
@@ -48,24 +33,147 @@ const playerValidation = (req, res, next) => {
       'string.base': 'gender must be a number',
       'string.min': 'gender must be minimum of {#limit} characters',
       'string.max': 'gender must be maximum of {#limit} characters',
-    }),
-
-    Birthday: Joi.string().pattern(new RegExp("^\d{1,2}\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}$")).required().messages({
-      'string.base': 'Birthday must be a string',
-      'string.empty': 'Birthday is required',
-      'string.pattern.base': 'Birthday must have days, month, and year',
-      'any.required': 'Birthday is required'
-    }),
+    })
   })
 
-  const { userName, name, age, gender, phoneNumber, password, Birthday, email } = req.body
-  const { error } = validation.validate({ userName, name, age, gender, phoneNumber, password, Birthday, email }, { abortEarly: false })
+  const {userName, email, password, gender } = req.body
+
+  const { error } = validateSignup.validate({userName,gender,email,password}, { abortEarly: false })
   if (error) {
-    return res.status(400).json({
-      error: error.message
-    })
+    const errors = error.details.map(detail => detail.message)
+    
+    // Send errors one by one
+    for (const errorMessage of errors) {
+    return res.status(400).json({ error: errorMessage })
+    }
   }
+
   next()
 }
 
-module.exports = playerValidation
+
+const updateValidation = (req, res, next) => {
+  const validateUpdate = Joi.object({
+   
+name: Joi.string().min(3).max(50).allow('').messages({
+  'string.base': 'Name must be a string',
+  'string.min': 'Name must be at least {#limit} characters long',
+  'string.max': 'Name cannot be longer than {#limit} characters',
+}),
+
+Birthday: Joi.string().allow('')
+.pattern(/^\d{1,2}\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}$/)
+.messages({
+  'string.base': '"Birthday" must be a string',
+  'string.pattern.base': '"Birthday" must be in the format "21 August 2006"',
+}),
+
+phoneNumber: Joi.string().allow('')
+.pattern(/^\+?\d{1,4}[\s.-]?\(?\d+\)?[\d\s.-]*$/)
+.messages({
+  'string.base': 'phoneNumber must be a string',
+  'string.pattern.base': 'phoneNumber is not valid',
+  })
+})
+
+  const { name, Birthday, phoneNumber} = req.body
+
+  const { error } = validateUpdate.validate({name,Birthday, phoneNumber})
+  if (error) {
+    const errors = error.details.map(detail => detail.message)
+    
+    // Send errors one by one
+    for (const errorMessage of errors) {
+    return res.status(400).json({ error: errorMessage })
+    }
+  }
+
+  next()
+}
+
+
+const forgotValidation = (req, res, next) => {
+  const validateforgot = Joi.object({
+    email: Joi.string().email().required().messages({
+      'string.base': 'Email must be a string',
+      'string.empty': 'Email cannot be empty',
+      'string.email': 'Invalid email address',
+      'any.required': 'Email is required'
+    })
+  })
+
+  const { email } = req.body
+
+  const { error } = validateforgot.validate({email})
+  if (error) {
+    return res.status(400).json({
+      error: error.details.map(detail => detail.message), 
+    })
+  }
+
+  next()
+}
+
+
+const resetPasswordValidation = (req, res, next) => {
+  const validatePassword = Joi.object({
+    newPassword: Joi.string().min(8).max(30).required().messages({
+     'string.base': 'Password must be a string',
+      'string.empty': 'Password cannot be empty',
+      'string.min': 'Password must be a minimum of {#limit} characters',
+      'string.max': 'Password must be a maximum of {#limit} characters',
+      'any.required': 'Password is required'
+    }),
+  })
+
+  const { newPassword } = req.body
+
+  const { error } = validatePassword.validate({newPassword})
+  if (error) {
+    const errors = error.details.map(detail => detail.message)
+    
+    // Send errors one by one
+    for (const errorMessage of errors) {
+    return res.status(400).json({ error: errorMessage })
+    }
+  }
+
+  next()
+}
+
+
+const changePasswordValidation = (req, res, next) => {
+  const changePassword = Joi.object({
+    currentPassword: Joi.string().min(8).max(30).required().messages({
+     'string.base': 'Password must be a string',
+      'string.empty': 'Password cannot be empty',
+      'string.min': 'Password must be a minimum of {#limit} characters',
+      'string.max': 'Password must be a maximum of {#limit} characters',
+      'any.required': 'Password is required'
+    }),
+    newPassword: Joi.string().min(8).max(30).required().messages({
+     'string.base': 'Password must be a string',
+      'string.empty': 'Password cannot be empty',
+      'string.min': 'Password must be a minimum of {#limit} characters',
+      'string.max': 'Password must be a maximum of {#limit} characters',
+      'any.required': 'Password is required'
+    }),  
+  })
+
+  const { currentPassword, newPassword } = req.body
+
+  const { error } = changePassword.validate({currentPassword,newPassword})
+
+  if (error) {
+    const errors = error.details.map(detail => detail.message)
+    
+    // Send errors one by one
+    for (const errorMessage of errors) {
+    return res.status(400).json({ error: errorMessage })
+    }
+  }
+
+  next()
+}
+
+module.exports = {signUp, updateValidation, forgotValidation,changePasswordValidation, resetPasswordValidation}

@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
-const {DateTime} = require('luxon')
-const createdOn = DateTime.now().toLocaleString({month:"short",day:"2-digit"})
+const date = new Date().toLocaleString('en-NG', {day: '2-digit', month: 'short'})
+const createdOn = `${date}`
 
 
 const postSchema = new mongoose.Schema({

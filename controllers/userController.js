@@ -7,11 +7,9 @@ const cloudinary = require("../media/cloudinary")
 const bcrypt = require("bcrypt")
 const jwt = require("jsonwebtoken")
 require("dotenv").config()
-const DynamicEmail = require("../Emails/emailIndex")
+const sendOtp = require("../Emails/sendOTPcode")
 const sendEmail = require("../Emails/email")
 const { resetFunc } = require("../Emails/resetPasswordEmail")
-const { resendResetFunc } = require("../Emails/resendResetEmail")
-const resendOtpEmail = require("../Emails/resendVerificationOtp")
 
 
 exports.home = (req, res) => {
@@ -30,46 +28,16 @@ exports.signupPlayer = async (req, res) => {
             })
         }
 
-        // Basic email validation
-        if (!email || typeof email !== 'string' || !email.includes('@')) {
-            return res.status(400).json({
-                error: 'invalid email address'
-            })
-        }
-
         // Check if the email already exists in the agent database
-        const Email = await agentModel.findOne({ email }).limit(1)
-
+        const Email = await agentModel.findOne({email}).limit(1)
         if (Email) {
             return res.status(403).json({
                 error: `${email} can not be used for signup as a player`
             })
         }
 
-        if (userName.length < 8) {
-            return res.status(400).json({
-                error: "Username must be at least 8 characters long"
-            })
-        }
-
-        if (!userName.toLowerCase()) {
-            return res.status(400).json({
-                error: "Username must be in lowercase."
-            })
-        }
-
-        if (!/^[a-z0-9_.-]+$/.test(userName)) {
-            return res.status(400).json({
-                error: "Only numbers, hyphens, and underscores can be added if needed."
-            })
-        }
-
         // Check if user already exists in the database
-        let searchUsername = await agentModel.findOne({ userName }).limit(1)
-        if (!searchUsername) {
-            searchUsername = await playerModel.findOne({ userName }).limit(1)
-        }
-
+        const searchUsername = await agentModel.findOne({userName}).limit(1) || await playerModel.findOne({userName}).limit(1)
         // Throw an error if user was found
         if (searchUsername) {
             return res.status(403).json({
@@ -83,7 +51,7 @@ exports.signupPlayer = async (req, res) => {
 
         // Create an instance of a player
         const player = await playerModel.create({
-            userName,
+            userName: userName.toLowerCase(),
             password: hashpass,
             gender,
             position,
@@ -116,51 +84,22 @@ exports.signupPlayer = async (req, res) => {
     }
 }
 
+
 exports.signupAgent = async (req, res) => {
     try {
         // required information for registration
         const { userName, password, gender, email } = req.body
 
-        // Basic email validation
-        if (!email || typeof email !== 'string' || !email.includes('@')) {
-            return res.status(400).json({
-                error: 'Invalid email address'
-            })
-        }
-
         // Check if the email exists in the player's database
         const Email = await playerModel.findOne({email}).limit(1)
-
         if (Email) {
             return res.status(403).json({
                 error: `${email} can not be used for signup as an agent`
             })
         }
 
-        if (userName.length < 8) {
-            return res.status(400).json({
-                error: "Username must be at least 8 characters long"
-            })
-        }
-
-        if (!userName.toLowerCase()) {
-            return res.status(400).json({
-                error: "Username must be in lowercase."
-            })
-        }
-
-        if (!/^[a-z0-9_.-]+$/.test(userName)) {
-            return res.status(400).json({
-                error: "Only numbers, hyphens, and underscores can be added if needed."
-            })
-        }
-
         // check if user already exists in the database
-        let searchUsername = await agentModel.findOne({userName}).limit(1)
-        if (!searchUsername) {
-            searchUsername = await playerModel.findOne({userName}).limit(1)
-        }
-
+    const searchUsername = await agentModel.findOne({userName}).limit(1) || await playerModel.findOne({userName}).limit(1)
         // throw an error if user was found
         if (searchUsername) {
             return res.status(403).json({
@@ -174,7 +113,7 @@ exports.signupAgent = async (req, res) => {
 
         // create an instance of an agent
         const agent = await agentModel.create({
-            userName,
+            userName: userName.toLowerCase(),
             password: hashpass,
             gender,
             email: email.toLowerCase(),
@@ -198,34 +137,6 @@ exports.signupAgent = async (req, res) => {
                 id: agent._id
             })
         }
-    } catch (error) {
-        res.status(500).json({
-            error: "Internal server error"
-        })
-    }
-}
-
-
-const sendOtp = async (agent, player, otp) => {
-    try {
-        const subject = "Email Verification"
-        const userName = agent ? agent.userName : player.userName
-        const email = agent ? agent.email : player.email
-        const text = `Verification code ${otp}`
-        const verificationLink = `https://elitefootball.onrender.com/verify/${agent?._id||player?._id}`
-
-        const html = DynamicEmail(userName, otp, verificationLink)
-        await sendEmail({ email, subject, text, html })
-
-        // Hash OTP then save it to the database
-        const saltotp = bcrypt.genSaltSync(10)
-        const hashotp = bcrypt.hashSync(otp, saltotp)
-
-        await OTPModel.create({
-            agentId: agent ? agent._id : undefined,
-            playerId: player ? player._id : undefined,
-            otp: hashotp
-        })
     } catch (error) {
         res.status(500).json({
             error: "Internal server error"
@@ -259,24 +170,8 @@ exports.resendOTP = async (req, res) => {
         // Generate 6-digit OTP
         const otp = `${Math.floor(Math.random() * 1000000)}`.padStart(6, '0')
 
-        //// hash OTP then save it to the database
-        const saltotp = bcrypt.genSaltSync(10)
-        const hashotp = bcrypt.hashSync(otp, saltotp)
-
-        // Save the hashed OTP in the OTPModel for verification
-        await OTPModel.create({
-            agentId: agent ? id : undefined,
-            playerId: player ? id : undefined,
-            otp: hashotp
-        })
-
-
-        // Send the OTP to the agent's email
-        const subject = "Email Verification"
-        const text = `Verification code ${otp}`
-        const verificationLink = `https://elitefootball.onrender.com/verify/${user._id}`
-        const html = resendOtpEmail(user.userName, otp, verificationLink)
-        await sendEmail({ email: user.email, subject, text, html })
+        // Pass user information to sendOtp
+        await sendOtp(user, otp)
 
         // return success response
         return res.status(200).json({
@@ -320,7 +215,6 @@ exports.verify = async (req, res) => {
             })
         }
 
-
         // Compare the OTP from the request with the one saved in the OTP record
         const isMatch = bcrypt.compareSync(otp, otpRecord.otp)
 
@@ -331,11 +225,7 @@ exports.verify = async (req, res) => {
         }
 
         // Fetch the user from the database
-        let user = await agentModel.findById(id)
-        if (!user) {
-            user = await playerModel.findById(id)
-        }
-
+        const user = await agentModel.findById(id) || await playerModel.findById(id)
         if (!user) {
             return res.status(404).json({
                 error: "user not found"
@@ -363,12 +253,11 @@ exports.verify = async (req, res) => {
             userName: user.userName
         }, process.env.jwtkey, { expiresIn: '30d' })
 
-
-        // Assign the token to the user and save
-        user.tokens = token
-        await user.save()
-
-        return res.status(200).json(user)
+        return res.status(200).json({
+            message: "verified",
+            user,
+            token
+        })
 
     } catch (error) {
         return res.status(500).json({
@@ -397,12 +286,7 @@ exports.logIn = async (req, res) => {
         }
 
         // Search for the user based on userName, email, or phoneNumber
-        let user = await agentModel.findOne({ userName }).limit(1)
-        if (!user) {
-            user = await playerModel.findOne({ userName }).limit(1)
-        }
-
-
+        const user = await agentModel.findOne({ userName }).limit(1) || await playerModel.findOne({ userName }).limit(1)
         if (!user) {
             return res.status(404).json({
                 error: "User not found."
@@ -430,13 +314,10 @@ exports.logIn = async (req, res) => {
             userName: user.userName
         }, process.env.jwtkey, {expiresIn: '30d'})
 
-        // Assign the token to the user and save
-        user.tokens = token
-        await user.save()
-
         res.status(200).json({
             message: "Login successful.",
-            user
+            user,
+            token
         })
     } catch (error) {
         res.status(500).json({
@@ -466,23 +347,21 @@ exports.logOut = async (req, res) => {
 
         const decodedToken = jwt.verify(token, process.env.jwtkey)
 
-        let user = await playerModel.findById(decodedToken.userId)
-
-        if (!user) {
-            user = await agentModel.findById(decodedToken.userId)
-        }
-
+        const user = await playerModel.findById(decodedToken.userId) || agentModel.findById(decodedToken.userId)
         if (!user) {
             return res.status(404).json({
                 error: "User not found",
             })
         }
 
-        user.tokens = null
-        await user.save()
+        const expiredToken = jwt.sign({
+            userId: user._id,
+            userName: user.userName
+        }, process.env.jwtkey, { expiresIn: '1sec' })
 
         res.status(200).json({
             message: "Logged out successfully",
+            expiredToken
         })
     } catch (error) {
         res.status(500).json({
@@ -497,41 +376,26 @@ exports.forgotPassword = async (req, res) => {
         const {id} = req.params
         const { email } = req.body
 
-        // Validate email
-        if (!email || !email.includes('@')) {
-            return res.status(400).json({
-                error: 'Invalid email address'
-            })
-        }
-
         // Find user by email in either agent or player collection
-        const foundUser = await agentModel.findOne({ email, _id:id }) || await playerModel.findOne({email, _id:id })
-
-        if (!foundUser) {
+        const user = await agentModel.findOne({ email, _id:id }) || await playerModel.findOne({email, _id:id })
+        if (!user) {
             return res.status(404).json({
                 error: 'User not found'
             })
         }
 
-        // Generate OTP
-        const otp = `${Math.floor(Math.random() * 1000000)}`.padStart(6, '0')
-
-        // Hash OTP
-        const salt = bcrypt.genSaltSync(10)
-        const hashotp = bcrypt.hashSync(otp, salt)
-
-        // Save hashed OTP to OTPModel
-        await OTPModel.create({
-            agentId: foundUser instanceof agentModel ? foundUser._id : undefined,
-            playerId: foundUser instanceof playerModel ? foundUser._id : undefined,
-            otp: hashotp
-        })
+       // generate a token for the user
+       const token = jwt.sign({
+        userId:user._id,
+        email:user.email,
+    },process.env.jwtkey,{expiresIn: "5mins"})
 
         // Send email with OTP and verification link
+        const userName = user.userName
         const subject = 'Reset Password'
-        const verificationLink = `https://elitefootball.onrender.com/reset_password/${foundUser._id}`
-        const html = resetFunc(foundUser.userName, otp, verificationLink)
-        await sendEmail({ email: foundUser.email, subject, html })
+        const verificationLink = `https://elitefootball.onrender.com/reset_password/${token}`
+        const html = resetFunc(userName, verificationLink)
+        await sendEmail({ email: user.email, subject, html })
 
         // Respond with success message
         res.status(200).json({
@@ -545,118 +409,11 @@ exports.forgotPassword = async (req, res) => {
 }
 
 
-exports.ResndResetOtpCode = async (req, res) => {
-    try {
-        const id = req.params.id
-
-        const agent = await agentModel.findById(id)
-        const player = await playerModel.findById(id)
-        let users = player || agent
-
-        if (!users) {
-            return res.status(404).json({
-                error: "user not found"
-            })
-        }
-
-        const otp = `${Math.floor(Math.random() * 1000000)}`.padStart(6, '0')
-
-        // hash OTP then save it to the database
-        const saltotp = bcrypt.genSaltSync(10)
-        const hashotp = bcrypt.hashSync(otp, saltotp)
-
-        // Send the OTP to the user's email
-        const subject = "Reset Password"
-        const verificationLink = `https://elitefootball.onrender.com/reset_password/${users._id}`
-
-        const html = resendResetFunc(users.userName, otp, verificationLink)
-        await sendEmail({ email: users.email, subject, html })
-
-
-        // Save the hashed OTP in the OTPModel for verification
-        await OTPModel.create({
-            agentId: agent ? id : undefined,
-            playerId: player ? id : undefined,
-            otp: hashotp
-        })
-
-        res.status(200).json({
-            message: `An otp code has been resent to your email.`,
-        })
-    } catch (err) {
-        res.status(500).json({
-            error: 'Internal server error'
-        })
-    }
-}
-
-
-exports.verifyPasswordOTP = async (req, res) => {
-    try {
-        const id = req.params.id
-        const { otp } = req.body
-
-        // Search for the latest OTP record the user
-        let otpRecord = await OTPModel.findOne({ agentId: id }).sort({ createdAt: -1 })
-        if (!otpRecord) {
-            otpRecord = await OTPModel.findOne({ playerId: id }).sort({ createdAt: -1 })
-        }
-
-        if (!otpRecord) {
-            return res.status(404).json({
-                error: "OTP not found"
-            })
-        }
-
-        const otpCreatedAt = new Date(otpRecord.createdAt)
-        const otpExpirationTime = new Date(otpCreatedAt.getTime() + (5 * 60 * 1000))
-        const currentTime = new Date()
-
-        if (currentTime > otpExpirationTime) {
-            // Delete the OTP record from the database
-            await OTPModel.deleteOne({ _id: otpRecord._id })
-
-            return res.status(400).json({
-                error: "OTP has expired"
-            })
-        }
-
-        // Compare the OTP from the request with the one saved in the OTP record
-        const isMatch = bcrypt.compareSync(otp, otpRecord.otp)
-
-        if (!isMatch) {
-            return res.status(400).json({
-                error: "Invalid OTP"
-            })
-        }
-
-        await OTPModel.findByIdAndDelete(otpRecord._id)
-
-        // Send success response
-        return res.status(200).json({
-            message: "verified."
-        })
-
-    } catch (error) {
-        res.status(500).json({
-            error: "Internal server error"
-        })
-    }
-}
-
-
 exports.resetPassword = async (req, res) => {
     try {
         const id = req.params.id
 
         const { newPassword, confirmPassword } = req.body
-
-        // Input Validation
-        if (!newPassword || !confirmPassword) {
-            return res.status(400).json({
-                error: "Input a new password."
-            })
-        }
 
         if (!confirmPassword) {
             return res.status(400).json({
@@ -673,12 +430,7 @@ exports.resetPassword = async (req, res) => {
         const salt = await bcrypt.genSalt(10)
         const hashedPassword = await bcrypt.hash(newPassword, salt)
 
-        // find user
-        let user = await agentModel.findById(id)
-        if (!user) {
-            user = await playerModel.findById(id)
-        }
-
+        const user = await agentModel.findById(id) || await playerModel.findById(id)
         if (!user) {
             return res.status(404).json({
                 error: "User not found"
@@ -706,31 +458,20 @@ exports.changePassword = async (req, res) => {
 
         const { currentPassword, newPassword, confirmPassword } = req.body
 
-        if (!currentPassword) {
-            return res.status(400).json({
-                error: "Input recent password."
-            })
-        }
-
-        if (!newPassword) {
-            return res.status(400).json({
-                error: "Input a new password."
-            })
-        }
-
         if (!confirmPassword) {
             return res.status(400).json({
                 error: "Confirm password."
             })
         }
 
-        let user = await agentModel.findById(id)
+        const user = await agentModel.findById(id) ||  await playerModel.findById(id)
         if (!user) {
-            user = await playerModel.findById(id)
+            return res.status(404).json({
+                error: "User not found"
+            })
         }
 
         const checkPassword = await bcrypt.compare(currentPassword, user.password)
-
         if (!checkPassword) {
             return res.status(401).json({
                 error: "Incorrect password"
@@ -767,28 +508,27 @@ exports.updateUserName = async (req, res) => {
 
         // Check if a new userName is provided in the body
         if (!userName) {
-            return res.status(400).json(null)
+            return res.status(400).json({
+                error: "This feild can't be left empty"
+            })
         }
 
-        // Check if user already exists in the database
-        // Check if user exists in agentModel
-        let user = await agentModel.findById(id) || await playerModel.findById(id)
+        // Check if user already exists in the agentModel or playerModel
+        const user = await agentModel.findById(id) || await playerModel.findById(id)
         if (!user) {
             return res.status(404).json({
                 error: "User not found"
             })
         }
 
-
         // Check if the new userName is already taken by another user
-        let existingUser = await agentModel.findOne({ userName }) || await playerModel.findOne({ userName })
+        const existingUser = await agentModel.findOne({userName}) || await playerModel.findOne({userName})
         // Throw an error if userName is already taken
         if (existingUser) {
             return res.status(403).json({
                 error: `${userName} is taken.`
             })
         }
-
         if (userName.length < 8) {
             return res.status(400).json({
                 error: "Username must be at least 8 characters long"
@@ -812,7 +552,6 @@ exports.updateUserName = async (req, res) => {
 exports.updateEmail = async (req, res) => {
     try {
         const id = req.user.userId
-
         const { password, email } = req.body
 
         // Validate the new email address
@@ -823,9 +562,11 @@ exports.updateEmail = async (req, res) => {
         }
 
         // Find user by id
-        let user = await agentModel.findById(id)
+        const user = await agentModel.findById(id) || await playerModel.findById(id)
         if (!user) {
-            user = await playerModel.findById(id)
+            return res.status(404).json({
+                error: "User not found"
+            })
         }
 
         // Verify the password
@@ -862,15 +603,7 @@ exports.updateUserProfile = async (req, res) => {
         // Initialize an update object
         const updateFields = {}
 
-        // Add fields to the update object only if they are provided (including empty strings)
-        if (name !== undefined) {
-            if (name.length > 0 && name.length < 3) {
-                return res.status(400).json({
-                    error: "Name is too short"
-                })
-            }
-            updateFields.name = name
-        }
+        if (name !== undefined) updateFields.name = name
         if (locatedAt !== undefined) updateFields.locatedAt = locatedAt
         if (phoneNumber !== undefined) updateFields.phoneNumber = phoneNumber
         if (Birthday !== undefined) updateFields.Birthday = Birthday
@@ -879,7 +612,6 @@ exports.updateUserProfile = async (req, res) => {
 
         // Try updating the user in the agentModel
         let user = await agentModel.findByIdAndUpdate(id, updateFields, { new: true })
-
         // If user is not found in agentModel, try updating in playerModel
         if (!user) {
             user = await playerModel.findByIdAndUpdate(id, updateFields, { new: true })
@@ -899,7 +631,7 @@ exports.updateUserProfile = async (req, res) => {
             phoneNumber: user.phoneNumber !== undefined ? user.phoneNumber : "Default Phone Number",
             Birthday: user.Birthday !== undefined ? user.Birthday : "Default Birthday",
             Bio: user.Bio !== undefined ? user.Bio : "Default Bio",
-            relationship_status: user.relationship_status !== undefined ? user.relationship_status : "Default Relationship Status"
+            relationship_status: "single"
         })
     } catch (error) {
         // Handle any errors
@@ -910,14 +642,12 @@ exports.updateUserProfile = async (req, res) => {
 }
 
 
-
 exports.createProfileImg = async (req, res) => {
     try {
         const id = req.user.userId
 
         // Check if user exists in agentModel
-        let user = await agentModel.findById(id) || await playerModel.findById(id)
-
+        const user = await agentModel.findById(id) || await playerModel.findById(id)
         if (!user) {
             return res.status(404).json({
                 error: "User not found"
@@ -1039,7 +769,7 @@ exports.follow = async (req, res) => {
         }
 
         // Find the user
-        let user = await agentModel.findById(id) || await playerModel.findById(id)
+        const user = await agentModel.findById(id) || await playerModel.findById(id)
         if (!user) {
             return res.status(404).json({
                 error: "User not found."
@@ -1083,11 +813,9 @@ exports.follow = async (req, res) => {
             }
 
             if (entity instanceof agentModel) {
-
                 Notification.agent = entity._id
 
             } else if (entity instanceof playerModel) {
-
                 Notification.player = entity._id
             }
 
@@ -1125,14 +853,14 @@ exports.unfollow = async (req, res) => {
         }
 
         // Find the user  making this request
-        let user = await agentModel.findById(id) || await playerModel.findById(id)
+        const user = await agentModel.findById(id) || await playerModel.findById(id)
         if (!user) {
             return res.status(404).json({
                 error: "User not found."
             })
         }
 
-        let entity = await agentModel.findById(entityId) || await playerModel.findById(entityId)
+        const entity = await agentModel.findById(entityId) || await playerModel.findById(entityId)
         if (!entity) {
             return res.status(404).json({
                 error: "User not found."
@@ -1172,7 +900,7 @@ exports.getOneFollower = async (req, res) => {
         const { userName } = req.body
         let { limit, page } = req.query
 
-        let user = await agentModel.findById(id) || await playerModel.findById(id)
+        const user = await agentModel.findById(id) || await playerModel.findById(id)
         if (!user) {
             return res.status(404).json({
                 error: "User not found."
@@ -1248,7 +976,7 @@ exports.getAllFollowers = async (req, res) => {
             })
         }
 
-        let user = await agentModel.findById(id) || await playerModel.findById(id)
+        const user = await agentModel.findById(id) || await playerModel.findById(id)
         if (!user) {
             return res.status(404).json({
                 error: "User not found."
@@ -1302,7 +1030,7 @@ exports.getOneFollowing = async (req, res) => {
         const { userName } = req.body
         let { limit, page } = req.query
 
-        let user = await agentModel.findById(id) || await playerModel.findById(id)
+        const user = await agentModel.findById(id) || await playerModel.findById(id)
         if (!user) {
             return res.status(404).json({
                 error: "user not found"
@@ -1375,7 +1103,7 @@ exports.getAllFollowing = async (req, res) => {
             })
         }
 
-        let user = await agentModel.findById(id) || await playerModel.findById(id)
+        const user = await agentModel.findById(id) || await playerModel.findById(id)
         if (!user) {
             return res.status(404).json({
                 error: "User not found."
@@ -1435,11 +1163,7 @@ exports.subscription = async (req, res) => {
             })
         }
 
-        let user = await playerModel.findById(id)
-        if (!user) {
-            user = await agentModel.findById(id)
-        }
-
+        let user = await playerModel.findById(id) || await agentModel.findById(id)
         if (!user) {
             return res.status(404).json({
                 error: "User not found."
@@ -1452,7 +1176,6 @@ exports.subscription = async (req, res) => {
         await user.save()
         subscription.subscribed = true
         await subscription.save()
-
 
         res.status(201).json({
             message: `subscription for $${subscription.amount} oneOff ${plan} plan was successfull.`,
@@ -1478,7 +1201,6 @@ exports.getSubscription = async (req, res) => {
 
         // Find the subscription by owner ID
         const subscription = await subscriptionModel.findOne({owner: id})
-
         if (id !== subscription.owner) {
             return res.status(401).json({
                 error: "Unauthorized."

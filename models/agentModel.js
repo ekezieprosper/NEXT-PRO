@@ -1,6 +1,8 @@
 const mongoose = require("mongoose")
-const {DateTime} = require('luxon')
-const createdOn = DateTime.now().toLocaleString({month:"short",day:"2-digit", year:"numeric"})
+const date = new Date().toLocaleString('en-NG', {day: '2-digit', month: 'short', year:'numeric'})
+const createdOn = `${date}`
+
+
 
 const agentSchema = new mongoose.Schema({
     userName: {type: String, required: true, unique: true},
@@ -58,8 +60,6 @@ const agentSchema = new mongoose.Schema({
         default: false
     },
 
-    tokens: {type: String},
-      
     subscription: { 
         type: mongoose.Schema.Types.ObjectId,
          ref: 'subscription'

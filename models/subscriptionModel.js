@@ -1,6 +1,11 @@
 const mongoose = require('mongoose')
-const {DateTime} = require('luxon')
-const createdOn = DateTime.now().toLocaleString({month:"short",day:"2-digit", year:"numeric", hour:"2-digit",minute:"2-digit"})
+const date = new Date().toLocaleString('en-NG', {timeZone: 'Africa/Lagos', ...{day: '2-digit', month: 'short', year:'numeric', }})
+const time = new Date().toLocaleString('en-NG', { timeZone: 'Africa/Lagos', ...{ hour: '2-digit', minute: '2-digit', hourCycle: 'h23' } })
+const [hour,minute] = time.split(':')
+const status = hour >= 12 ? "PM" : "AM"
+const createdOn = `${date} ${hour}:${minute}${status}`
+
+
 
 const subscriptionSchema = new mongoose.Schema({
     plan: {

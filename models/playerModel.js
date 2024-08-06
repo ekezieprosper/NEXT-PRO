@@ -1,6 +1,6 @@
 const mongoose = require("mongoose")
-const {DateTime} = require('luxon')
-const createdOn = DateTime.now().toLocaleString({month:"short",day:"2-digit", year:"numeric"})
+const date = new Date().toLocaleString('en-NG', {day: '2-digit', month: 'short', year:'numeric'})
+const createdOn = `${date}`
 
 
 const playerSchema = new mongoose.Schema({
@@ -84,8 +84,6 @@ const playerSchema = new mongoose.Schema({
         default: false
     },
  
-    tokens: {type: String},
-      
     subscription: { 
         type: mongoose.Schema.Types.ObjectId,
          ref: 'subscription'

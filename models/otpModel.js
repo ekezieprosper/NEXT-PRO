@@ -1,16 +1,16 @@
 const mongoose = require('mongoose')
-const {DateTime} = require('luxon')
+
+
 
 const otpSchema = new mongoose.Schema({
-
     otp: {
         type: String,
         required: true
     },
 
     createdAt: {
-        type: Date,
-        default: () => DateTime.now().toJSDate(),
+        type: Date, 
+        default: Date.now,
         expires: '5m'
     },
 

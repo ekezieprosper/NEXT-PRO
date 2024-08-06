@@ -1,6 +1,9 @@
 const mongoose = require("mongoose")
-const {DateTime} = require('luxon')
-const createdOn = DateTime.now().toLocaleString({hour:"2-digit",minute:"2-digit"})
+const time = new Date().toLocaleString('en-NG', { timeZone: 'Africa/Lagos', ...{ hour: '2-digit', minute: '2-digit', hourCycle: 'h23' } })
+const [hour,minute] = time.split(':')
+const status = hour >= 12 ? "PM" : "AM"
+const createdOn = `${hour}:${minute}${status}`
+
 
 
 const storySchema = new mongoose.Schema({
