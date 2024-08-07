@@ -21,13 +21,13 @@ const signUp = (req, res, next) => {
       'any.required': 'Email is required'
     }),
 
-    password: Joi.string().required().min(8).max(30).messages({
+    password: Joi.string().required().pattern(new RegExp('^(?=.*[a-zA-Z])(?=.*[\\d@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$')).messages({
       'string.base': 'Password must be a string',
       'string.empty': 'Password cannot be empty',
-      'string.min': 'Password must be a minimum of {#limit} characters',
-      'string.max': 'Password must be a maximum of {#limit} characters',
+      'string.pattern.base': 'Password must be at least 8 characters long, include at least one letter, and contain at least one number or special character.',
       'any.required': 'Password is required'
     }),
+    
 
     gender: Joi.string().required().min(4).max(6).messages({
       'string.base': 'gender must be a number',
@@ -114,14 +114,20 @@ const forgotValidation = (req, res, next) => {
   next()
 }
 
+// password: Joi.string().required().pattern(new RegExp('^(?=.*[a-zA-Z])(?=.*[\\d@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$')).messages({
+//   'string.base': 'Password must be a string',
+//   'string.empty': 'Password cannot be empty',
+//   'string.pattern.base': 'Password must be at least 8 characters long, include at least one letter, and contain at least one number or special character.',
+//   'any.required': 'Password is required'
+// }),
+
 
 const resetPasswordValidation = (req, res, next) => {
   const validatePassword = Joi.object({
-    newPassword: Joi.string().min(8).max(30).required().messages({
-     'string.base': 'Password must be a string',
+    newPassword: Joi.string().required().pattern(new RegExp('^(?=.*[a-zA-Z])(?=.*[\\d@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$')).messages({
+      'string.base': 'Password must be a string',
       'string.empty': 'Password cannot be empty',
-      'string.min': 'Password must be a minimum of {#limit} characters',
-      'string.max': 'Password must be a maximum of {#limit} characters',
+      'string.pattern.base': 'Password must be at least 8 characters long, include at least one letter, and contain at least one number or special character.',
       'any.required': 'Password is required'
     }),
   })
@@ -144,18 +150,16 @@ const resetPasswordValidation = (req, res, next) => {
 
 const changePasswordValidation = (req, res, next) => {
   const changePassword = Joi.object({
-    currentPassword: Joi.string().min(8).max(30).required().messages({
-     'string.base': 'Password must be a string',
+    currentPassword:  Joi.string().required().pattern(new RegExp('^(?=.*[a-zA-Z])(?=.*[\\d@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$')).messages({
+      'string.base': 'Password must be a string',
       'string.empty': 'Password cannot be empty',
-      'string.min': 'Password must be a minimum of {#limit} characters',
-      'string.max': 'Password must be a maximum of {#limit} characters',
+      'string.pattern.base': 'Password must be at least 8 characters long, include at least one letter, and contain at least one number or special character.',
       'any.required': 'Password is required'
     }),
-    newPassword: Joi.string().min(8).max(30).required().messages({
-     'string.base': 'Password must be a string',
+    newPassword:  Joi.string().required().pattern(new RegExp('^(?=.*[a-zA-Z])(?=.*[\\d@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$')).messages({
+      'string.base': 'Password must be a string',
       'string.empty': 'Password cannot be empty',
-      'string.min': 'Password must be a minimum of {#limit} characters',
-      'string.max': 'Password must be a maximum of {#limit} characters',
+      'string.pattern.base': 'Password must be at least 8 characters long, include at least one letter, and contain at least one number or special character.',
       'any.required': 'Password is required'
     }),  
   })

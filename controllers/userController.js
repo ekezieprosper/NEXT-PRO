@@ -10,6 +10,8 @@ require("dotenv").config()
 const sendOtp = require("../Emails/sendOTPcode")
 const sendEmail = require("../Emails/email")
 const { resetFunc } = require("../Emails/resetPasswordEmail")
+const DynamicEmail = require("../Emails/emailIndex")
+const resendOtpEmail = require("../Emails/resendOTP")
 
 
 exports.home = (req, res) => {
@@ -151,7 +153,6 @@ exports.resendOTP = async (req, res) => {
 
         const agent = await agentModel.findById(id)
         const player = await playerModel.findById(id)
-
         const user = player || agent
 
         if (!user) {
@@ -170,8 +171,23 @@ exports.resendOTP = async (req, res) => {
         // Generate 6-digit OTP
         const otp = `${Math.floor(Math.random() * 1000000)}`.padStart(6, '0')
 
-        // Pass user information to sendOtp
-        await sendOtp(user, otp)
+       // hash OTP then save it to the database
+       const saltotp = bcrypt.genSaltSync(10)
+       const hashotp = bcrypt.hashSync(otp, saltotp)
+
+       // Save the hashed OTP in the OTPModel for verification
+       await OTPModel.create({
+        agentId: agent ? agent._id : undefined,
+        playerId: player ? player._id : undefined,
+        otp: hashotp
+       })
+
+       // Send the OTP to the user's email
+       const subject = "Email Verification"
+       const text = `Verification code ${otp}`
+       const verificationLink = `https://elitefootball.onrender.com/verify/${agent?._id||player?._id}`
+       const html = resendOtpEmail(user.userName, otp, verificationLink)
+       await sendEmail({ email: user.email, subject, text, html })
 
         // return success response
         return res.status(200).json({
@@ -198,19 +214,6 @@ exports.verify = async (req, res) => {
 
         if (!otpRecord) {
             return res.status(404).json({
-                error: "OTP not found"
-            })
-        }
-
-        const otpCreatedAt = new Date(otpRecord.createdAt)
-        const otpExpirationTime = new Date(otpCreatedAt.getTime() + (5 * 60 * 1000))
-        const currentTime = new Date()
-
-        if (currentTime > otpExpirationTime) {
-            // Delete the OTP record from the database
-            await OTPModel.deleteOne({ _id: otpRecord._id })
-
-            return res.status(400).json({
                 error: "OTP has expired"
             })
         }
@@ -631,7 +634,7 @@ exports.updateUserProfile = async (req, res) => {
             phoneNumber: user.phoneNumber !== undefined ? user.phoneNumber : "Default Phone Number",
             Birthday: user.Birthday !== undefined ? user.Birthday : "Default Birthday",
             Bio: user.Bio !== undefined ? user.Bio : "Default Bio",
-            relationship_status: "single"
+            relationship_status: user.relationship_status && user.relationship_status.trim() !== "" ? user.relationship_status : "single"
         })
     } catch (error) {
         // Handle any errors

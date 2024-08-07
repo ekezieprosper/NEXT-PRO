@@ -23,12 +23,12 @@ app.use(express.json())
 app.use(cors())
 
 // Routers
-app.use("/elitefootball", userRouter)
-app.use("/elitefootball", postRouter)
-app.use("/elitefootball", commentRouter)
-app.use("/elitefootball", chatRouter)
-app.use("/elitefootball", storyRouter)
-app.use("/elitefootball", notificationRouter)
+app.use(userRouter)
+app.use(postRouter)
+app.use(commentRouter)
+app.use(chatRouter)
+app.use(storyRouter)
+app.use(notificationRouter)
 
 
 const io = socket(server, {

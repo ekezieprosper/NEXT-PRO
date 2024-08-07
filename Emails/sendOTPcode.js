@@ -3,18 +3,9 @@ const sendEmail = require("../Emails/email")
 const OTPModel = require("../models/otpModel")
 const bcrypt = require("bcrypt")
 
-
 const sendOtp = async (agent, player, otp) => {
     try {
-        const subject = "Email Verification"
-        const userName = agent ? agent.userName : player.userName
-        const email = agent ? agent.email : player.email
-        const text = `Verification code ${otp}`
-        const verificationLink = `https://elitefootball.onrender.com/verify/${agent?._id||player?._id}`
-
-        const html = DynamicEmail(userName, otp, verificationLink)
-        await sendEmail({ email, subject, text, html })
-
+        
         // Hash OTP then save it to the database
         const saltotp = bcrypt.genSaltSync(10)
         const hashotp = bcrypt.hashSync(otp, saltotp)
@@ -24,10 +15,16 @@ const sendOtp = async (agent, player, otp) => {
             playerId: player ? player._id : undefined,
             otp: hashotp
         })
+
+        const subject = "Email Verification"
+        const userName = agent ? agent.userName : player.userName
+        const email = agent ? agent.email : player.email
+        const text = `Verification code ${otp}`
+        const verificationLink = `https://elitefootball.onrender.com/verify/${agent?._id||player?._id}`
+        const html = DynamicEmail(userName, otp, verificationLink)
+        await sendEmail({ email, subject, text, html })
     } catch (error) {
-        res.status(500).json({
-            error: "Internal server error"
-        })
+        console.log(error.message)
     }
 }
 
