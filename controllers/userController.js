@@ -10,7 +10,6 @@ require("dotenv").config()
 const sendOtp = require("../Emails/sendOTPcode")
 const sendEmail = require("../Emails/email")
 const { resetFunc } = require("../Emails/resetPasswordEmail")
-const DynamicEmail = require("../Emails/emailIndex")
 const resendOtpEmail = require("../Emails/resendOTP")
 
 
@@ -43,7 +42,7 @@ exports.signupPlayer = async (req, res) => {
         // Throw an error if user was found
         if (searchUsername) {
             return res.status(403).json({
-                error: `${userName} is taken.`
+                error: `${userName} is already taken.`
             })
         }
 
@@ -350,7 +349,7 @@ exports.logOut = async (req, res) => {
 
         const decodedToken = jwt.verify(token, process.env.jwtkey)
 
-        const user = await playerModel.findById(decodedToken.userId) || agentModel.findById(decodedToken.userId)
+        const user = await playerModel.findById(decodedToken.userId) || await agentModel.findById(decodedToken.userId)
         if (!user) {
             return res.status(404).json({
                 error: "User not found",
@@ -529,7 +528,7 @@ exports.updateUserName = async (req, res) => {
         // Throw an error if userName is already taken
         if (existingUser) {
             return res.status(403).json({
-                error: `${userName} is taken.`
+                error: `${userName} is already taken.`
             })
         }
         if (userName.length < 8) {
@@ -688,7 +687,13 @@ exports.deleteProfileImg = async (req, res) => {
         const id = req.user.userId
 
         // Find the agent in the database
-        let user = await agentModel.findById(id) || await playerModel.findById(id)
+        const user = await agentModel.findById(id) || await playerModel.findById(id)
+
+          // Delete profile image from Cloudinary if exists
+          if(user.profileImg){
+            const oldImage = user.profileImg.split("/").pop().split(".")[0]
+            await cloudinary.uploader.destroy(oldImage)
+        }
 
         // Delete profile image from Cloudinary if exists
         if (user.profileImg) {
@@ -1241,6 +1246,13 @@ exports.getSubscription = async (req, res) => {
 exports.deleteAccount = async (req, res) => {
     try {
         const id = req.user.userId
+
+         const user = await agentModel.findByIdAndDelete(id) ||  await playerModel.findByIdAndDelete(id)
+
+        if(user.profileImg){
+            const oldImage = user.profileImg.split("/").pop().split(".")[0]
+            await cloudinary.uploader.destroy(oldImage)
+        }
 
         const deleteAcct = await agentModel.findByIdAndDelete(id) ||  await playerModel.findByIdAndDelete(id)
 

@@ -13,7 +13,7 @@ exports.startChat = async (req, res) => {
     const {friendId} = req.body
 
     // check if the user exist
-    let user = await playerModel.findById(friendId) || await agentModel.findById(friendId)
+    const user = await playerModel.findById(friendId) || await agentModel.findById(friendId)
     if (!user) {
       return res.status(404).json({
         error: "user not found"
@@ -202,7 +202,7 @@ exports.sendMessage = async (req, res) => {
     const id = req.user.userId
     const {chatId, text} = req.body
 
-    let user = await playerModel.findById(id) || await agentModel.findById(id)
+    const user = await playerModel.findById(id) || await agentModel.findById(id)
     if (!user) {
       return res.status(404).json({
         error: `not found`
@@ -688,7 +688,7 @@ exports.addMembers = async (req, res) => {
     // Fetch usernames of the new unique members
     const newMembersUsernames = await Promise.all(
       newUniqueMembers.map(async memberId => {
-        let member = await playerModel.findById(memberId) || await agentModel(memberId)
+        const member = await playerModel.findById(memberId) || await agentModel(memberId)
         return member ? member.userName : null
       })
     )
@@ -775,7 +775,7 @@ exports.editAdmin = async (req, res) => {
     const id = req.user.userId
     const {groupId, addToAdmin} = req.body
 
-    let newAdd = await playerModel.findById(addToAdmin) || await agentModel.findById(addToAdmin)
+    const newAdd = await playerModel.findById(addToAdmin) || await agentModel.findById(addToAdmin)
 
     const group = await chatModel.findById(groupId)
     if (!group) {
