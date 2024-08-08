@@ -6,6 +6,7 @@ const subscriptionModel = require("../models/subscriptionModel")
 const cloudinary = require("../media/cloudinary")
 const bcrypt = require("bcrypt")
 const jwt = require("jsonwebtoken")
+const fs = require("fs")
 require("dotenv").config()
 const sendOtp = require("../Emails/sendOTPcode")
 const sendEmail = require("../Emails/email")
@@ -30,7 +31,7 @@ exports.signupPlayer = async (req, res) => {
         }
 
         // Check if the email already exists in the agent database
-        const Email = await agentModel.findOne({email}).limit(1)
+        const Email = await agentModel.findOne({ email }).limit(1)
         if (Email) {
             return res.status(403).json({
                 error: `${email} can not be used for signup as a player`
@@ -38,7 +39,7 @@ exports.signupPlayer = async (req, res) => {
         }
 
         // Check if user already exists in the database
-        const searchUsername = await agentModel.findOne({userName}).limit(1) || await playerModel.findOne({userName}).limit(1)
+        const searchUsername = await agentModel.findOne({ userName }).limit(1) || await playerModel.findOne({ userName }).limit(1)
         // Throw an error if user was found
         if (searchUsername) {
             return res.status(403).json({
@@ -92,7 +93,7 @@ exports.signupAgent = async (req, res) => {
         const { userName, password, gender, email } = req.body
 
         // Check if the email exists in the player's database
-        const Email = await playerModel.findOne({email}).limit(1)
+        const Email = await playerModel.findOne({ email }).limit(1)
         if (Email) {
             return res.status(403).json({
                 error: `${email} can not be used for signup as an agent`
@@ -100,7 +101,7 @@ exports.signupAgent = async (req, res) => {
         }
 
         // check if user already exists in the database
-    const searchUsername = await agentModel.findOne({userName}).limit(1) || await playerModel.findOne({userName}).limit(1)
+        const searchUsername = await agentModel.findOne({ userName }).limit(1) || await playerModel.findOne({ userName }).limit(1)
         // throw an error if user was found
         if (searchUsername) {
             return res.status(403).json({
@@ -170,23 +171,23 @@ exports.resendOTP = async (req, res) => {
         // Generate 6-digit OTP
         const otp = `${Math.floor(Math.random() * 1000000)}`.padStart(6, '0')
 
-       // hash OTP then save it to the database
-       const saltotp = bcrypt.genSaltSync(10)
-       const hashotp = bcrypt.hashSync(otp, saltotp)
+        // hash OTP then save it to the database
+        const saltotp = bcrypt.genSaltSync(10)
+        const hashotp = bcrypt.hashSync(otp, saltotp)
 
-       // Save the hashed OTP in the OTPModel for verification
-       await OTPModel.create({
-        agentId: agent ? agent._id : undefined,
-        playerId: player ? player._id : undefined,
-        otp: hashotp
-       })
+        // Save the hashed OTP in the OTPModel for verification
+        await OTPModel.create({
+            agentId: agent ? agent._id : undefined,
+            playerId: player ? player._id : undefined,
+            otp: hashotp
+        })
 
-       // Send the OTP to the user's email
-       const subject = "Email Verification"
-       const text = `Verification code ${otp}`
-       const verificationLink = `https://elitefootball.onrender.com/verify/${agent?._id||player?._id}`
-       const html = resendOtpEmail(user.userName, otp, verificationLink)
-       await sendEmail({ email: user.email, subject, text, html })
+        // Send the OTP to the user's email
+        const subject = "Email Verification"
+        const text = `Verification code ${otp}`
+        const verificationLink = `https://ProNest.onrender.com/verify/${agent?._id || player?._id}`
+        const html = resendOtpEmail(user.userName, otp, verificationLink)
+        await sendEmail({ email: user.email, subject, text, html })
 
         // return success response
         return res.status(200).json({
@@ -314,7 +315,7 @@ exports.logIn = async (req, res) => {
         const token = jwt.sign({
             userId: user._id,
             userName: user.userName
-        }, process.env.jwtkey, {expiresIn: '30d'})
+        }, process.env.jwtkey, { expiresIn: '30d' })
 
         res.status(200).json({
             message: "Login successful.",
@@ -375,27 +376,27 @@ exports.logOut = async (req, res) => {
 
 exports.forgotPassword = async (req, res) => {
     try {
-        const {id} = req.params
+        const { id } = req.params
         const { email } = req.body
 
         // Find user by email in either agent or player collection
-        const user = await agentModel.findOne({ email, _id:id }) || await playerModel.findOne({email, _id:id })
+        const user = await agentModel.findOne({ email, _id: id }) || await playerModel.findOne({ email, _id: id })
         if (!user) {
             return res.status(404).json({
                 error: 'User not found'
             })
         }
 
-       // generate a token for the user
-       const token = jwt.sign({
-        userId:user._id,
-        email:user.email,
-    },process.env.jwtkey,{expiresIn: "5mins"})
+        // generate a token for the user
+        const token = jwt.sign({
+            userId: user._id,
+            email: user.email,
+        }, process.env.jwtkey, { expiresIn: "5mins" })
 
         // Send email with OTP and verification link
         const userName = user.userName
         const subject = 'Reset Password'
-        const verificationLink = `https://elitefootball.onrender.com/reset_password/${token}`
+        const verificationLink = `https://ProNest.onrender.com/reset_password/${token}`
         const html = resetFunc(userName, verificationLink)
         await sendEmail({ email: user.email, subject, html })
 
@@ -466,7 +467,7 @@ exports.changePassword = async (req, res) => {
             })
         }
 
-        const user = await agentModel.findById(id) ||  await playerModel.findById(id)
+        const user = await agentModel.findById(id) || await playerModel.findById(id)
         if (!user) {
             return res.status(404).json({
                 error: "User not found"
@@ -524,7 +525,7 @@ exports.updateUserName = async (req, res) => {
         }
 
         // Check if the new userName is already taken by another user
-        const existingUser = await agentModel.findOne({userName}) || await playerModel.findOne({userName})
+        const existingUser = await agentModel.findOne({ userName }) || await playerModel.findOne({ userName })
         // Throw an error if userName is already taken
         if (existingUser) {
             return res.status(403).json({
@@ -553,47 +554,57 @@ exports.updateUserName = async (req, res) => {
 
 exports.updateEmail = async (req, res) => {
     try {
-        const id = req.user.userId
-        const { password, email } = req.body
+        const id = req.user.userId 
+        const { password, email } = req.body 
 
         // Validate the new email address
-        if (!email || typeof email !== 'string' || !email.includes('@')) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        if (!email || typeof email !== 'string' || !emailRegex.test(email)) {
             return res.status(400).json({
-                error: 'Invalid email address'
+                error: 'Invalid email address',
             })
         }
 
-        // Find user by id
+        // Find user by ID from either model
         const user = await agentModel.findById(id) || await playerModel.findById(id)
         if (!user) {
             return res.status(404).json({
-                error: "User not found"
+                error: 'User not found',
             })
         }
 
-        // Verify the password
-        const checkPassword = await bcrypt.compare(password, user.password)
-        if (!checkPassword) {
-            return res.status(401).json({
-                error: "Incorrect password"
+        // Check if the user record contains a password
+        if (!user.password) {
+            return res.status(400).json({
+                error: 'Password not found in user record.',
+            })
+        }
+
+        // Compare the provided password with the hashed password stored in the database
+        const isPasswordCorrect = await bcrypt.compare(password, user.password)
+        if (!isPasswordCorrect) {
+            return res.status(400).json({
+                error: 'Incorrect password.',
             })
         }
 
         // Update the user's email
         user.email = email
-        await user.save()
+        await user.save() 
 
         return res.status(200).json({
-            message: "email updated successfully.",
-            email: user.email
+            message: 'Email updated successfully.',
+            email: user.email,
         })
-
     } catch (error) {
+        console.log(error.message)
+
         res.status(500).json({
-            error: "Internal server error"
+            error: 'Internal server error',
         })
     }
 }
+
 
 
 exports.updateUserProfile = async (req, res) => {
@@ -648,7 +659,7 @@ exports.createProfileImg = async (req, res) => {
     try {
         const id = req.user.userId
 
-        // Check if user exists in agentModel
+        // Check if user exists in agentModel or playerModel
         const user = await agentModel.findById(id) || await playerModel.findById(id)
         if (!user) {
             return res.status(404).json({
@@ -663,7 +674,14 @@ exports.createProfileImg = async (req, res) => {
         }
 
         // Upload image to Cloudinary
-        const result = await cloudinary.uploader.upload(file.path, {resource_type: 'image'})
+        const result = await cloudinary.uploader.upload(file.path, { resource_type: 'image' })
+
+        // Delete the file from local storage
+        fs.unlink(file.path, (err) => {
+            if (err) {
+                console.error('Failed to delete local file', err)
+            }
+        })
 
         // Update user profile image URL
         user.profileImg = result.secure_url
@@ -689,8 +707,8 @@ exports.deleteProfileImg = async (req, res) => {
         // Find the agent in the database
         const user = await agentModel.findById(id) || await playerModel.findById(id)
 
-          // Delete profile image from Cloudinary if exists
-          if(user.profileImg){
+        // Delete profile image from Cloudinary if exists
+        if (user.profileImg) {
             const oldImage = user.profileImg.split("/").pop().split(".")[0]
             await cloudinary.uploader.destroy(oldImage)
         }
@@ -852,7 +870,7 @@ exports.unfollow = async (req, res) => {
     try {
         const id = req.user.userId
 
-        const {entityId} = req.body
+        const { entityId } = req.body
 
         if (id === entityId) {
             return res.status(400).json({
@@ -991,10 +1009,14 @@ exports.getAllFollowers = async (req, res) => {
             })
         }
 
-        // Calculate amount of followers of the user
-        const startIndex = (page - 1) * limit
-        const endIndex = Math.min(page * limit, user.followers.length)
+        // Calculate the total number of followers
+        const totalFollowers = user.followers.length
 
+        // Calculate the start and end indices for pagination
+        const startIndex = (page - 1) * limit
+        const endIndex = Math.min(page * limit, totalFollowers)
+
+        // Get the followers for the current page
         const followers = user.followers.slice(startIndex, endIndex)
 
         // Check if each follower follows back
@@ -1006,19 +1028,22 @@ exports.getAllFollowers = async (req, res) => {
                     agentModel.findById(followerId)
                 ])
 
-                const followsBack = playerFollower
+                const followedBack = playerFollower
                     ? playerFollower.followers.includes(id)
                     : agentFollower
                         ? agentFollower.followers.includes(id)
                         : false
-                return { followerId, followsBack }
+
+                return { followerId, followedBack }
             })
         )
 
-        const totalPages = Math.ceil(user.followers.length / limit)
+        // Calculate the total number of pages
+        const totalPages = Math.ceil(totalFollowers / limit)
         const nextPage = page < totalPages
 
         return res.status(200).json({
+            totalFollowers,
             followers: followersWithFollowBackInfo,
             totalPages,
             currentPage: page,
@@ -1036,56 +1061,33 @@ exports.getOneFollowing = async (req, res) => {
     try {
         const id = req.user.userId
         const { userName } = req.body
-        let { limit, page } = req.query
 
+        // Find the user in either the agentModel or playerModel
         const user = await agentModel.findById(id) || await playerModel.findById(id)
         if (!user) {
             return res.status(404).json({
-                error: "user not found"
+                error: "User not found."
             })
         }
 
-        // Set default values for limit and page
-        limit = limit ? parseInt(limit) : 10
-        page = page ? parseInt(page) : 1
-
-        // Validate limit and page
-        if (isNaN(limit) || limit <= 0 || isNaN(page) || page <= 0) {
-            return res.status(400).json({
-                error: "Invalid limit or page value."
-            })
-        }
-
-        // Check if user is found in either playerModel or agentModel
-        const following = user.following.map(async (followingId) => {
+        // Search for a following user whose username contains the provided userName
+        for (const followingId of user.following) {
             const followingUser = await playerModel.findById(followingId) || await agentModel.findById(followingId)
             if (followingUser && followingUser.userName.includes(userName)) {
-                return {
+                // Check if this following user follows back
+                const followsBack = followingUser.followers.includes(id)
+
+                return res.status(200).json({
                     id: followingUser._id.toString(),
-                    username: followingUser.userName
-                }
+                    username: followingUser.userName,
+                    followsBack
+                })
             }
-            return null
-        })
+        }
 
-        const resolvedFollowing = await Promise.all(following)
-        const validFollowing = resolvedFollowing.filter(followingUser => followingUser !== null)
-
-        const startIndex = (page - 1) * limit
-        const endIndex = page * limit
-
-        // Slice the following users array to get the users for the current page
-        const Following = validFollowing.slice(startIndex, endIndex)
-
-        // Check if there are more pages
-        const totalPages = Math.ceil(validFollowing.length / limit)
-        const nextPage = endIndex < validFollowing.length
-
-        return res.status(200).json({
-            Following,
-            totalPages,
-            currentPage: page,
-            nextPage
+        // If no matching user is found, return a 404 response
+        return res.status(404).json({
+            error: "No matching user found in following list."
         })
     } catch (error) {
         res.status(500).json({
@@ -1118,6 +1120,9 @@ exports.getAllFollowing = async (req, res) => {
             })
         }
 
+        // Calculate the total number users the current user is following
+        const Following = user.following.length
+
         // Calculate amount of following users of the user
         const startIndex = (page - 1) * limit
         const endIndex = Math.min(page * limit, user.following.length)
@@ -1125,20 +1130,21 @@ exports.getAllFollowing = async (req, res) => {
         const following = user.following.slice(startIndex, endIndex)
 
         // Check if each following user follows back
-        const followingWithFollowBackInfo = await Promise.all(
-            following.map(async (followingId) => {
-                // Check if following user is found in both playerModel and agentModel
-                const [playerFollowing, agentFollowing] = await Promise.all([
-                    playerModel.findById(followingId),
-                    agentModel.findById(followingId)
+        const followersWithFollowBackInfo = await Promise.all(
+            following.map(async (followerId) => {
+                // Check if follower is found in both playerModel and agentModel
+                const [playerFollower, agentFollower] = await Promise.all([
+                    playerModel.findById(followerId),
+                    agentModel.findById(followerId)
                 ])
 
-                const followsBack = playerFollowing
-                    ? playerFollowing.followers.includes(id)
-                    : agentFollowing
-                        ? agentFollowing.followers.includes(id)
+                const followedBack = playerFollower
+                    ? playerFollower.following.includes(id)
+                    : agentFollower
+                        ? agentFollower.following.includes(id)
                         : false
-                return { followingId, followsBack }
+
+                return { followerId, followedBack }
             })
         )
 
@@ -1147,7 +1153,8 @@ exports.getAllFollowing = async (req, res) => {
         const nextPage = page < totalPages
 
         return res.status(200).json({
-            following: followingWithFollowBackInfo,
+            Following,
+            following: followersWithFollowBackInfo,
             totalPages,
             currentPage: page,
             nextPage
@@ -1163,7 +1170,7 @@ exports.getAllFollowing = async (req, res) => {
 exports.subscription = async (req, res) => {
     try {
         const id = req.user.userId
-        const {plan} = req.body
+        const { plan } = req.body
 
         if (!plan) {
             return res.status(400).json({
@@ -1208,7 +1215,7 @@ exports.getSubscription = async (req, res) => {
         const user = await playerModel.findById(id) || await agentModel.findById(id)
 
         // Find the subscription by owner ID
-        const subscription = await subscriptionModel.findOne({owner: id})
+        const subscription = await subscriptionModel.findOne({ owner: id })
         if (id !== subscription.owner) {
             return res.status(401).json({
                 error: "Unauthorized."
@@ -1247,23 +1254,25 @@ exports.deleteAccount = async (req, res) => {
     try {
         const id = req.user.userId
 
-         const user = await agentModel.findByIdAndDelete(id) ||  await playerModel.findByIdAndDelete(id)
+        // Attempt to find and delete the user from both models
+        const user = await agentModel.findByIdAndDelete(id) || await playerModel.findByIdAndDelete(id)
 
-        if(user.profileImg){
-            const oldImage = user.profileImg.split("/").pop().split(".")[0]
-            await cloudinary.uploader.destroy(oldImage)
-        }
-
-        const deleteAcct = await agentModel.findByIdAndDelete(id) ||  await playerModel.findByIdAndDelete(id)
-
-        if (!deleteAcct) {
+        // If no user was found and deleted, respond with an error
+        if (!user) {
             return res.status(400).json({
                 error: "Unable to delete account"
             })
         }
 
+        // If the user had a profile image, delete it from Cloudinary
+        if (user.profileImg) {
+            const oldImage = user.profileImg.split("/").pop().split(".")[0]
+            await cloudinary.uploader.destroy(oldImage)
+        }
+
+        // Respond with a success message
         res.status(200).json({
-            message: "deleted successfully"
+            message: "Deleted successfully"
         })
 
     } catch (error) {
