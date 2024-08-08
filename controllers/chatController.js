@@ -894,12 +894,6 @@ exports.exitGroup = async (req, res) => {
   try {
     const id = req.user.userId
 
-    if (!id) {
-      return res.status(401).json({
-        error: "Session expired. Please log in again."
-      })
-    }
-
     // Fetch user from database
     const user = await playerModel.findById(id) || await agentModel.findById(id)
     if (!user) {

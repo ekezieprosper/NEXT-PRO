@@ -1212,19 +1212,27 @@ exports.getSubscription = async (req, res) => {
     try {
         const id = req.user.userId
 
+        // Find the user in either model
         const user = await playerModel.findById(id) || await agentModel.findById(id)
+        if (!user) {
+            return res.status(404).json({
+                message: "User not found"
+            })
+        }
 
         // Find the subscription by owner ID
         const subscription = await subscriptionModel.findOne({ owner: id })
-        if (id !== subscription.owner) {
-            return res.status(401).json({
-                error: "Unauthorized."
-            })
-        }
 
         if (!subscription) {
             return res.status(404).json({
                 message: "No active subscription"
+            })
+        }
+
+        // Check if the current user is the owner of the subscription
+        if (id !== subscription.owner.toString()) {
+            return res.status(401).json({
+                error: "Unauthorized."
             })
         }
 
@@ -1238,8 +1246,9 @@ exports.getSubscription = async (req, res) => {
             })
         }
 
+        // Respond with the active subscription details
         return res.status(200).json({
-            message: `You have a active subscription. valid till ${subscription.expiresIn}`
+            message: `You have an active subscription valid till ${subscription.expiresIn}`
         })
 
     } catch (error) {
