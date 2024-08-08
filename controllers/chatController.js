@@ -6,6 +6,8 @@ const notificationModel = require("../models/notificationModel")
 const cloudinary = require("../media/cloudinary")
 const emoji = require('node-emoji')
 const streamifier = require('streamifier')
+const fs = require("fs")
+
 
 exports.startChat = async (req, res) => {
   try {
@@ -137,12 +139,12 @@ exports.createGroupChat = async (req, res) => {
 }
 
 
-
 exports.createGroupImage = async (req, res) => {
   try {
     const id = req.user.userId
-    const {groupId} = req.body
+    const { groupId } = req.body
 
+    // Fetch the group chat
     const group = await chatModel.findById(groupId)
     if (!group) {
       return res.status(404).json({ 
@@ -150,18 +152,28 @@ exports.createGroupImage = async (req, res) => {
       })
     }
 
+    // Check if the user is a member of the group
     if (!group.members.includes(id)) {
       return res.status(400).json({ 
         error: "You are not a member of this group." 
       })
     }
 
+     // Check if the chat is a group chat
+     if (!group.groupName) {
+      return res.status(401).json({
+        error: "Cannot upload image to a chat that's not a group chat"
+      })
+    }
+
+    // Check if a file has been uploaded
     if (!req.file) {
       return res.status(400).json({
          error: "No file uploaded." 
         })
     }
 
+    // Upload the file to Cloudinary
     const result = await cloudinary.uploader.upload(req.file.path)
     if (!result.secure_url) {
       return res.status(500).json({
@@ -169,13 +181,23 @@ exports.createGroupImage = async (req, res) => {
         })
     }
 
+    // Delete the file from local storage
+    fs.unlink(req.file.path, (err) => {
+      if (err) {
+        console.error('Failed to delete local file', err)
+      }
+    })
+
+    // Update the group image URL
     group.groupImage = result.secure_url
     await group.save()
 
+    // Respond with the updated group image URL
     res.status(200).json({
        groupImage: group.groupImage 
       })
   } catch (error) {
+    console.error(error.message)
     res.status(500).json({ 
       error: "Internal server error" 
     })
@@ -200,32 +222,34 @@ exports.getChat = async (req, res) => {
 exports.sendMessage = async (req, res) => {
   try {
     const id = req.user.userId
-    const {chatId, text} = req.body
+    const { chatId, text } = req.body
 
     const user = await playerModel.findById(id) || await agentModel.findById(id)
     if (!user) {
-      return res.status(404).json({
-        error: `not found`
+      return res.status(404).json({ 
+        error: 'User not found' 
       })
     }
 
     const chat = await chatModel.findById(chatId)
     if (!chat) {
-      return res.status(404).json({
-        error: 'Chat not found'
+      return res.status(404).json({ 
+        error: 'Chat not found' 
       })
     }
 
-    // Check if the user is a member in the chat
-    if (!chat.members.includes(id) ) {
+    // Check if the user is a member of the chat
+    if (!chat.members.includes(id)) {
       return res.status(400).json({
-        error: `not a member`
-      })
+         error: 'User not a member of this chat' 
+        })
     }
 
     if (chat.block.includes(chatId)) {
+      const blockedByUser = await playerModel.findById(chat.blockedBy) || await agentModel.findById(chat.blockedBy)
+      const blockedByName = blockedByUser ? blockedByUser.userName : 'Unknown user'
       return res.status(400).json({
-        error: `This chat is blocked by ${chat.blockedBy}.You can't send message`
+        error: `This chat is blocked by ${blockedByName}. You can't send a message.`
       })
     }
 
@@ -235,27 +259,35 @@ exports.sendMessage = async (req, res) => {
       message = await Promise.all(req.files.map(async (file) => {
         try {
           const result = await cloudinary.uploader.upload(file.path, { resource_type: 'auto' })
+
+          // Delete the file from local storage
+          fs.unlink(file.path, (err) => {
+            if (err) {
+              console.error('Failed to delete local file', err)
+            }
+          })
+
           return result.secure_url
         } catch (error) {
           return res.status(400).json({
-            error: 'Error uploading files'
-          })
+             error: 'Error uploading files' 
+            })
         }
       }))
     }
 
     // Validate that at least one of text or media is present
     if (!text && message.length === 0) {
-      return res.status(400).json({ 
-        error: "Either text or media must be provided."
-       })
+      return res.status(400).json({
+         error: 'Either text or media must be provided.' 
+        })
     }
 
     // Replace emoji shortcodes in text with actual emojis
     const emojifiedText = text ? emoji.emojify(text) : ''
 
     const newMessage = new messageModel({
-      chatId: chatId,
+      chatId,
       text: emojifiedText,
       sender: id,
       media: message
@@ -277,12 +309,13 @@ exports.sendMessage = async (req, res) => {
 
     res.status(201).json(response)
 
+    // Add the message to the chat and save it
     chat.chats.push(newMessage._id)
-      await chat.save()
+    await chat.save()
 
   } catch (error) {
-    res.status(500).json({
-      error: "Internal server error"
+    res.status(500).json({ 
+      error: 'Internal server error' 
     })
   }
 }
@@ -357,6 +390,7 @@ if (chat.block.includes(chatId)) {
     })
   }
 }
+
 
 exports.editMessage = async (req, res) => {
   try {
@@ -477,7 +511,13 @@ exports.getChatmessage = async (req, res) => {
 
     const messages = await messageModel.find({chatId})
 
-    res.status(200).json(messages)
+    if (messages.length === 0) {
+      return res.status(404).json({
+        message: "start sending message"
+    })
+  } else {
+      res.status(200).json(messages)
+    }    
 
   } catch (error) {
     res.status(500).json({ 
@@ -633,6 +673,14 @@ exports.deleteMessage = async (req, res) => {
       })
     }
 
+     // Delete media from Cloudinary if it exists
+     if (message.media && message.media.length > 0) {
+      await Promise.all(message.media.map(async (mediaUrl) => {
+        const publicId = mediaUrl.split("/").pop().split(".")[0]
+        await cloudinary.uploader.destroy(publicId)
+      }))
+    }
+
     // Delete the message
     await messageModel.findByIdAndDelete(messageId)
 
@@ -657,7 +705,7 @@ exports.addMembers = async (req, res) => {
     const id = req.user.userId
     const { groupId, newMembers } = req.body
 
-    const user = await playerModel.findById(id) || await agentModel(id)
+    const user = await playerModel.findById(id) || await agentModel.findById(id)
 
     if (!Array.isArray(newMembers)) {
       return res.status(400).json({
@@ -688,7 +736,7 @@ exports.addMembers = async (req, res) => {
     // Fetch usernames of the new unique members
     const newMembersUsernames = await Promise.all(
       newUniqueMembers.map(async memberId => {
-        const member = await playerModel.findById(memberId) || await agentModel(memberId)
+        const member = await playerModel.findById(memberId) || await agentModel.findById(memberId)
         return member ? member.userName : null
       })
     )
@@ -713,7 +761,7 @@ exports.addMembers = async (req, res) => {
 exports.forwardMessage = async (req, res) => {
   try {
     const id = req.user.userId
-    const {messageId, forwardTo} = req.body
+    const { messageId, forwardTo } = req.body
 
     // Validate message
     const message = await messageModel.findById(messageId)
@@ -735,7 +783,6 @@ exports.forwardMessage = async (req, res) => {
       _id: { $in: forwardTo }
     })
 
-
     // If no valid chats found, return an error
     if (chats.length === 0) {
       return res.status(404).json({
@@ -754,12 +801,16 @@ exports.forwardMessage = async (req, res) => {
         voice: message.voice
       })
       await forwardedMessage.save()
+
+      // Add forwarded message ID to the chat's messages
+      chat.chats.push(forwardedMessage._id)
+      await chat.save()
     })
 
     await Promise.all(forwardMessages)
 
     res.status(200).json({ 
-      success: `forwarded`
+      success: `Message forwarded to ${chats.length} chat(s).`
     })
 
   } catch (error) {
@@ -768,6 +819,7 @@ exports.forwardMessage = async (req, res) => {
     })
   }
 }
+
 
 
 exports.editAdmin = async (req, res) => {
@@ -975,7 +1027,17 @@ exports.deleteChat = async (req, res) => {
         })
     }
 
-    chat.members = chat.members.filter(memberId => memberId.toString() !== id)
+      // Remove the user from the group's members list
+      chat.members = chat.members.filter(memberId => memberId.toString() !== id)
+
+      // Remove the user from the admin list if they are an admin
+      if (chat.admin.includes(id)) {
+        chat.admin = chat.admin.filter(adminId => adminId.toString() !== id)
+      }
+  
+      if (chat.creator.includes(id)) {
+        chat.creator = chat.creator.filter(creatorId => creatorId.toString() !== id)
+      }
 
     if (chat.members.length === 0) {
       await chatModel.findByIdAndDelete(chatId)

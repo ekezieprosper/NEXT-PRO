@@ -713,17 +713,6 @@ exports.deleteProfileImg = async (req, res) => {
             await cloudinary.uploader.destroy(oldImage)
         }
 
-        // Delete profile image from Cloudinary if exists
-        if (user.profileImg) {
-            try {
-                // Delete image from Cloudinary
-                await cloudinary.uploader.destroy(user.profileImg)
-            } catch (err) {
-                return res.status(500).json({
-                    error: "check your internet connection"
-                })
-            }
-        }
         // Update profile image URL in the database to default
         user.profileImg = "https://t3.ftcdn.net/jpg/05/53/79/60/360_F_553796090_XHrE6R9jwmBJUMo9HKl41hyHJ5gqt9oz.jpg"
         await user.save()
