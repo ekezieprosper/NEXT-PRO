@@ -22,6 +22,7 @@ const notificationSchema = new mongoose.Schema({
   required: true,
   refPath: 'recipientModel'
 },
+
   recipientModel: {
   type: String,
   required: true,

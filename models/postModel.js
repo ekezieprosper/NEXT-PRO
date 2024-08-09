@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
-const date = new Date().toLocaleString('en-NG', {day: '2-digit', month: 'short'})
+const date = new Date().toLocaleString('en-NG', {day: '2-digit', month: 'short', year:'numeric'})
 const createdOn = `${date}`
+
 
 
 const postSchema = new mongoose.Schema({

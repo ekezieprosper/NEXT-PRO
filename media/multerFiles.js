@@ -17,8 +17,8 @@ const fileFilter = function (req, file, cb) {
     }
 }
 
-const imageFileSize = 10 * 1024 * 1024 
-const videoFileSize = 50 * 1024 * 1024 
+const imageFileSize = 1024 * 1024 * 1024 
+const videoFileSize = 1024 * 1024 * 1024 *1024
 
 const maxCount = 30
 

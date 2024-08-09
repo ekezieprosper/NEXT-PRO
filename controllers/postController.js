@@ -27,7 +27,15 @@ exports.createPost = async (req, res) => {
             try {
                 media = await Promise.all(req.files.map(async (file) => {
                     const result = await cloudinary.uploader.upload(file.path, { resource_type: 'auto' })
-                    return result.secure_url
+
+         // Delete the file from local storage
+          fs.unlink(file.path, (err) => {
+            if (err) {
+              console.error('Failed to delete local file', err)
+            }
+          })
+
+        return result.secure_url
                 }))
             } catch (uploadError) {
                 return res.status(500).json({
@@ -351,6 +359,14 @@ exports.deletePost = async (req, res) => {
                 error: "Unauthorized"
             })
         }
+
+          // Delete media from Cloudinary if it exists
+     if (post.post && post.post.length > 0) {
+        await Promise.all(post.post.map(async (postUrl) => {
+          const publicId = postUrl.split("/").pop().split(".")[0]
+          await cloudinary.uploader.destroy(publicId)
+        }))
+      }
 
         // Delete the post
         await postModel.findByIdAndDelete(postId)

@@ -32,7 +32,7 @@ const storySchema = new mongoose.Schema({
     
     date: {
         type: Date,
-        default: () => DateTime.now().toJSDate(),
+        default: Date.now,
         expires: '24h'
     },
 

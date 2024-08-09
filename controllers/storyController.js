@@ -25,7 +25,15 @@ exports.createstory = async (req, res) => {
             try {
                 media = await Promise.all(req.files.map(async (file) => {
                     const result = await cloudinary.uploader.upload(file.path, { resource_type: 'auto' })
-                    return result.secure_url
+
+            // Delete the file from local storage
+          fs.unlink(file.path, (err) => {
+            if (err) {
+              console.error('Failed to delete local file', err)
+            }
+          })
+            
+          return result.secure_url
                 }))
             } catch (uploadError) {
                 return res.status(500).json({
@@ -122,6 +130,14 @@ exports.getstory = async (req, res) => {
 
         if (currentTime > expiresIn) {
             await storyModel.deleteOne({ _id: story._id })
+
+        // Delete media from Cloudinary if it exists
+     if (story.story && story.story.length > 0) {
+        await Promise.all(story.story.map(async (storyUrl) => {
+          const publicId = storyUrl.split("/").pop().split(".")[0]
+          await cloudinary.uploader.destroy(publicId)
+        }))
+      }
 
             return res.status(410).json(null)
         }
@@ -337,6 +353,14 @@ exports.deletestory = async (req, res) => {
                 error: "Unauthorized."
             })
         }
+
+             // Delete media from Cloudinary if it exists
+     if (story.story && story.story.length > 0) {
+        await Promise.all(story.story.map(async (storyUrl) => {
+          const publicId = storyUrl.split("/").pop().split(".")[0]
+          await cloudinary.uploader.destroy(publicId)
+        }))
+      }
 
         // Delete the story
         await storyModel.findByIdAndDelete(storyId)
