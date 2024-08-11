@@ -55,7 +55,7 @@ exports.newComment = async (req, res) => {
           })
       }
 
-      const notification = `${user.userName} commented:${comment} on your post`
+      const notification = `${user.userName} commented on your post :${comment}`
       const Notification = {
         notification,
         recipient: post.owner,

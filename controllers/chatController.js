@@ -673,14 +673,16 @@ exports.deleteMessage = async (req, res) => {
       })
     }
 
-     // Delete media from Cloudinary if it exists
-     if (message.media && message.media.length > 0) {
-      await Promise.all(message.media.map(async (mediaUrl) => {
-        const publicId = mediaUrl.split("/").pop().split(".")[0]
-        await cloudinary.uploader.destroy(publicId)
-      }))
-    }
-
+      // Delete media from Cloudinary if it exists
+      if (message.media && message.media.length > 0) {
+        await Promise.all(message.media.map(async (mediaUrl) => {
+          const publicId = mediaUrl.split("/").pop().split(".")[0];
+          // Determine the resource type (image or video)
+          const resourceType = mediaUrl.includes('.mp4') || mediaUrl.includes('.avi') ? 'video' : 'image';
+          await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
+        }))  
+      }
+      
     // Delete the message
     await messageModel.findByIdAndDelete(messageId)
 

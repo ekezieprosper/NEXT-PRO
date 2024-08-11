@@ -22,6 +22,12 @@ exports.getAllNotifications = async (req, res) => {
             date: notification.Date 
         }))
 
+        if (!notifications) {
+            return res.status(404).json({
+                message: "No notification yet"
+            })
+        }
+
         res.status(200).json(notifications)
     } catch (error) {
         res.status(500).json({
