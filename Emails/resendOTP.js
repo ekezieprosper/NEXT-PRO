@@ -95,7 +95,7 @@ const resendOtpEmail = (userName, otp, verificationLink) => {
                                     <p>otp code: <b>${otp}</b></p>
                                 </h3><br>
                             </div>
-                                <hr><p style="margin-left:2mm; font-size: 12px; color: #909090;">©${new Date().getFullYear()} ProNest.com, all rights reserved.</p>
+                                <hr><p style="margin-left:2mm; font-size: 12px; color: #909090;">©${new Date().getFullYear()} ProNest, all rights reserved.</p>
                         </td>
                     </tr>
                 </table>

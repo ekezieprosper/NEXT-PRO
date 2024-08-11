@@ -5,8 +5,8 @@ const agentModel = require("../models/agentModel")
 const fs = require("fs")
 const notificationModel = require("../models/notificationModel")
 const emoji = require('node-emoji')
-const { DateTime } = require('luxon')
-const createdOn = DateTime.now().toLocaleString({ day: "2-digit", month: "short" })
+const date = new Date().toLocaleString('en-NG', {day: '2-digit', month: 'short'})
+const createdOn = `${date}`
 
 
 

@@ -40,6 +40,7 @@ exports.newComment = async (req, res) => {
     const newComment = new commentModel({
       comment,
       owner: id,
+      post: postId,
       time: new Date()
     })
 
@@ -78,8 +79,6 @@ exports.newComment = async (req, res) => {
       comment: newComment.comment 
     })
   } catch (error) {
-    console.log(error.message)
-    
     res.status(500).json({
        error: 'Internal Server Error' 
       })
@@ -134,49 +133,47 @@ exports.getOnePostComment = async (req, res) => {
 }
 
 
-
 exports.getAllPostComment = async (req, res) => {
   try {
-    const id = req.user.userId
-    const postId = req.params.postId
+    const id = req.user.userId;
+    const postId = req.params.postId;
 
     if (!id) {
       return res.status(401).json({
         error: "Session expired. Please log in."
-      })
+      });
     }
 
     // Find the post in both models
-    const post = await postModel.findById(postId) || await storyModel.findById(postId)
+    const post = await postModel.findById(postId) || await storyModel.findById(postId);
     if (!post) {
       return res.status(404).json({
         message: "Post not found"
-      })
+      });
     }
 
     // Retrieve all comments for the post
-    const allComments = await commentModel.find()
+    const allComments = await commentModel.find({post: postId});
 
     // If no comments found
     if (allComments.length === 0) {
       return res.status(404).json({
         message: "No comments yet"
-      })
+      });
     }
 
     const commentsData = allComments.map(comment => ({
       id: comment._id,
       comment: comment.comment
-    }))
+    }));
 
-    res.status(200).json(commentsData)
+    res.status(200).json(commentsData);
   } catch (error) {
     res.status(500).json({
       error: "Internal server error"
-    })
+    });
   }
-}
-
+};
 
 
 exports.editComment = async (req, res) => {
