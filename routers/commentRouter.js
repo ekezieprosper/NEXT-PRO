@@ -7,7 +7,7 @@ const authenticate = require("../auth/authenticate")
 
 router.post('/comment/:postId',authenticate, newComment)
 router.put("/edit/comment/:postId",authenticate, editComment)
-router.get('/comment/:postId',authenticate, getOnePostComment) 
+router.get('/:commentId',authenticate, getOnePostComment) 
 router.get('/post/:postId/comments',authenticate, getAllPostComment)
 router.delete('/delete_comment/:commentId',authenticate, deleteCommentOnPost)
 

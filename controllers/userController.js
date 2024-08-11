@@ -22,16 +22,33 @@ exports.home = (req, res) => {
 exports.signupPlayer = async (req, res) => {
     try {
         // Required information for registration
-        const { userName, password, gender, position, email } = req.body
+        const { userName, password, gender, position, subPosition, email } = req.body
 
-        if (!position) {
+         // Check if position and subPosition are provided
+         if (!position || !subPosition) {
             return res.status(400).json({
-                error: 'enter position'
-            })
+                error: 'Both position and subPosition are required.'
+            });
         }
 
+        // Check if the subPosition is valid for the given position
+        const positionSubpositionMap = {
+            'Striker': ['ST', 'SS', 'RW', 'LW'],
+            'Midfielder': ['CAM', 'CDM', 'CM', 'RM', 'LM'],
+            'Defender': ['CB', 'LB', 'RB', 'LWB', 'RWB'],
+            'Goalkeeper': ['GK']
+        };
+
+        if (!positionSubpositionMap[position]?.includes(subPosition)) {
+            return res.status(400).json({
+                error: `${subPosition} is not a valid subposition for the selected position (${position}).`
+            });
+        }
+
+
+
         // Check if the email already exists in the agent database
-        const Email = await agentModel.findOne({ email }).limit(1)
+        const Email = await agentModel.findOne({ email })
         if (Email) {
             return res.status(403).json({
                 error: `${email} can not be used for signup as a player`
@@ -39,11 +56,11 @@ exports.signupPlayer = async (req, res) => {
         }
 
         // Check if user already exists in the database
-        const searchUsername = await agentModel.findOne({ userName }).limit(1) || await playerModel.findOne({ userName }).limit(1)
+        const searchUsername = await agentModel.findOne({userName}) || await playerModel.findOne({userName})
         // Throw an error if user was found
         if (searchUsername) {
             return res.status(403).json({
-                error: `${userName} is already taken.`
+                error: `${userName} is taken.`
             })
         }
 
@@ -57,6 +74,7 @@ exports.signupPlayer = async (req, res) => {
             password: hashpass,
             gender,
             position,
+            subPosition,
             email: email.toLowerCase(),
         })
 
@@ -80,6 +98,8 @@ exports.signupPlayer = async (req, res) => {
             })
         }
     } catch (error) {
+        console.log(error.message);
+        
         res.status(500).json({
             error: "Internal server error"
         })
@@ -93,7 +113,7 @@ exports.signupAgent = async (req, res) => {
         const { userName, password, gender, email } = req.body
 
         // Check if the email exists in the player's database
-        const Email = await playerModel.findOne({ email }).limit(1)
+        const Email = await playerModel.findOne({ email })
         if (Email) {
             return res.status(403).json({
                 error: `${email} can not be used for signup as an agent`
@@ -101,7 +121,7 @@ exports.signupAgent = async (req, res) => {
         }
 
         // check if user already exists in the database
-        const searchUsername = await agentModel.findOne({ userName }).limit(1) || await playerModel.findOne({ userName }).limit(1)
+        const searchUsername = await agentModel.findOne({ userName }) || await playerModel.findOne({ userName })
         // throw an error if user was found
         if (searchUsername) {
             return res.status(403).json({
@@ -154,7 +174,6 @@ exports.resendOTP = async (req, res) => {
         const agent = await agentModel.findById(id)
         const player = await playerModel.findById(id)
         const user = player || agent
-
         if (!user) {
             return res.status(404).json({
                 error: "User not found."
@@ -211,7 +230,6 @@ exports.verify = async (req, res) => {
         if (!otpRecord) {
             otpRecord = await OTPModel.findOne({ playerId: id }).sort({ createdAt: -1 })
         }
-
         if (!otpRecord) {
             return res.status(404).json({
                 error: "OTP has expired"
@@ -289,7 +307,7 @@ exports.logIn = async (req, res) => {
         }
 
         // Search for the user based on userName, email, or phoneNumber
-        const user = await agentModel.findOne({ userName }).limit(1) || await playerModel.findOne({ userName }).limit(1)
+        const user = await agentModel.findOne({ userName }) || await playerModel.findOne({ userName })
         if (!user) {
             return res.status(404).json({
                 error: "User not found."
@@ -529,7 +547,7 @@ exports.updateUserName = async (req, res) => {
         // Throw an error if userName is already taken
         if (existingUser) {
             return res.status(403).json({
-                error: `${userName} is already taken.`
+                error: `${userName} is taken.`
             })
         }
         if (userName.length < 8) {

@@ -89,7 +89,7 @@ const resetFunc = (userName,verificationLink) => {
                             <div style="text-align: left;">
                             <p style="text-align: left; font-size: 16px; font-weight: 300; margin-bottom: 0; color: black;">We received a request to reset your password.<br>You can directly reset your password by clicking on the link below.</p><a href="${verificationLink}" class="btn btn-primary" style="padding: 10px 20px; display: inline-block; border-radius: 3px; margin-top: 20px; background: green; color: white; text-decoration: none;">reset password</a>
                             </div>
-                                <hr><p style="margin-left:2mm; font-size: 12px; color: #909090;">©${new Date().getFullYear()} sent by ProNest. All rights reserved.</p>
+                                <hr><p style="margin-left:2mm; font-size: 12px; color: #909090;">©${new Date().getFullYear()} ProNest.com, all rights reserved.</p>
                         </td>
                     </tr>
                 </table>

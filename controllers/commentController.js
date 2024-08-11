@@ -15,7 +15,7 @@ exports.newComment = async (req, res) => {
 
     if (!comment) {
       return res.status(400).json({
-         message: "input comment" 
+         message: "This feild can't be empty" 
         })
     }
 
@@ -27,7 +27,7 @@ exports.newComment = async (req, res) => {
         })
     }
 
-    let post = await postModel.findById(postId) || await storyModel.findById(postId)
+    const post = await postModel.findById(postId) || await storyModel.findById(postId)
     if (!post) {
       return res.status(404).json({
          message: "Post not found" 
@@ -78,6 +78,8 @@ exports.newComment = async (req, res) => {
       comment: newComment.comment 
     })
   } catch (error) {
+    console.log(error.message)
+    
     res.status(500).json({
        error: 'Internal Server Error' 
       })
@@ -85,44 +87,52 @@ exports.newComment = async (req, res) => {
 }
 
 
-
 exports.getOnePostComment = async (req, res) => {
   try {
     const id = req.user.userId
-    const postId = req.params.postId
+    const { commentId } = req.params
 
     if (!id) {
       return res.status(401).json({
-        error: "Session expired. Please log in."
+        error: "Session expired. Please log in.",
       })
     }
 
-    // Find the post in both models
-    let post = await postModel.findById(postId)
-    if (!post) {
-      post = await storyModel.findById(postId)
-    }
+    // Check if the post exists and has the comment in its comments field
+    const post = await postModel.findOne({ comments: commentId })
 
-    // Check if the post exists
-    if (!post) {
+    // If post is not found, check in the story model
+    const story = !post ? await storyModel.findOne({ comments: commentId }) : null
+
+    // If neither post nor story is found, return 404
+    if (!post && !story) {
       return res.status(404).json({
-        message: "Post not found"
+        message: "Comment not found in any post or story",
       })
     }
 
-    // Retrieve comments for the post
-    const comments = await commentModel.findOne({ post: postId })
+    // Retrieve the comment associated with the post or story
+    const comment = await commentModel.findById(commentId)
 
+    // Check if a comment was found
+    if (!comment) {
+      return res.status(404).json({
+        message: "Comment not found",
+      })
+    }
+
+    // Return the single comment
     res.status(200).json({
-      id: comments._id,
-      comment: comments.comment
+      id: comment._id,
+      comment: comment.comment,
     })
   } catch (error) {
     res.status(500).json({
-      error: "Internal server error"
+      error: "Internal server error",
     })
   }
 }
+
 
 
 exports.getAllPostComment = async (req, res) => {
@@ -137,12 +147,7 @@ exports.getAllPostComment = async (req, res) => {
     }
 
     // Find the post in both models
-    let post = await postModel.findById(postId)
-    if (!post) {
-      post = await storyModel.findById(postId)
-    }
-
-    // Check if the post exists
+    const post = await postModel.findById(postId) || await storyModel.findById(postId)
     if (!post) {
       return res.status(404).json({
         message: "Post not found"
@@ -150,7 +155,7 @@ exports.getAllPostComment = async (req, res) => {
     }
 
     // Retrieve all comments for the post
-    const allComments = await commentModel.find({ post: postId })
+    const allComments = await commentModel.find()
 
     // If no comments found
     if (allComments.length === 0) {
@@ -171,6 +176,7 @@ exports.getAllPostComment = async (req, res) => {
     })
   }
 }
+
 
 
 exports.editComment = async (req, res) => {
@@ -249,7 +255,7 @@ exports.deleteCommentOnPost = async (req, res) => {
     }
 
     // Find commentId in the postModel
-    let post = await postModel.findOne({ comments: commentId }) || await storyModel.findOne({ comments: commentId })
+    const post = await postModel.findOne({ comments: commentId }) || await storyModel.findOne({ comments: commentId })
     //delete comment if found in the comment array of the post
     if (post) {
       post.comments.pull(commentId)

@@ -76,7 +76,6 @@ exports.createPost = async (req, res) => {
         if (description) {
             response.description = description
         }
-        res.status(201).json(response)
 
         // Notify all followers about the new post
         const followers = user.followers
@@ -96,8 +95,9 @@ exports.createPost = async (req, res) => {
                 await follower.save()
             }
         }))
+        res.status(201).json(response)
 
-    } catch (error) {
+    } catch (error) {    
         res.status(500).json({
             error: "Internal server error"
         })
@@ -158,14 +158,7 @@ exports.getAllPosts = async (req, res) => {
                 error: "no post found"
             })
         }
-        res.status(200).json({
-            post: posts.post,
-            description: posts.description,
-            likes: posts.likes,
-            comments: posts.comments,
-            owner: posts.owner,
-            Date: posts.Date
-        })
+        res.status(200).json(posts)
 
     } catch (error) {
         res.status(500).json({
@@ -181,7 +174,7 @@ exports.getPostByDescription = async (req, res) => {
 
         if (!id) {
             return res.status(404).json({
-                error: "session expired.Login"
+                error: "Session expired. Login"
             })
         }
 
@@ -189,24 +182,28 @@ exports.getPostByDescription = async (req, res) => {
 
         if (!description || description.trim() === '') {
             return res.status(400).json({
-                error: "description is required"
+                error: "Description is required"
             })
         }
 
-        const post = await postModel.findOne({ description: { $regex: new RegExp(description, "i") } })
-        if (!post) {
+        // Use find instead of findOne to return all matching posts
+        const posts = await postModel.find({ description: { $regex: new RegExp(description, "i") } })
+
+        if (posts.length === 0) {
             return res.status(404).json({
-                error: `No post with description '${description}' was found`
+                error: `No posts with description '${description}' were found`
             })
         }
 
         res.status(200).json({
-            post: post.post,
-            description: post.description,
-            likes: post.likes,
-            comments: post.comments,
-            owner: post.owner,
-            Date: post.Date
+            posts: posts.map(post => ({
+                post: post.post,
+                description: post.description,
+                likes: post.likes,
+                comments: post.comments,
+                owner: post.owner,
+                Date: post.Date
+            }))
         })
 
     } catch (error) {
@@ -363,9 +360,11 @@ exports.deletePost = async (req, res) => {
           // Delete media from Cloudinary if it exists
      if (post.post && post.post.length > 0) {
         await Promise.all(post.post.map(async (postUrl) => {
-          const publicId = postUrl.split("/").pop().split(".")[0]
-          await cloudinary.uploader.destroy(publicId)
-        }))
+            const publicId = postUrl.split("/").pop().split(".")[0];
+            // Determine the resource type (image or video)
+            const resourceType = postUrl.includes('.mp4') || postUrl.includes('.avi') ? 'video' : 'image';
+            await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
+          }))  
       }
 
         // Delete the post

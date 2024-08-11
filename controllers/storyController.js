@@ -75,8 +75,6 @@ exports.createstory = async (req, res) => {
     response.text = text
     }
 
-        res.status(201).json(response)
-
         // Notify all followers about the new story
         const followers = user.followers
         await Promise.all(followers.map(async followerId => {
@@ -96,6 +94,8 @@ exports.createstory = async (req, res) => {
             }
         }))
 
+        res.status(201).json(response)
+
     } catch (error) {
         res.status(500).json({
             error: "Internal server error"
@@ -108,7 +108,7 @@ exports.getstory = async (req, res) => {
     try {
         const id = req.user.userId
 
-        let user = await playerModel.findById(id) || await agentModel.findById(id)
+        const user = await playerModel.findById(id) || await agentModel.findById(id)
         if (!user) {
             return res.status(400).json({
                 error: "No user found."
@@ -134,11 +134,14 @@ exports.getstory = async (req, res) => {
         // Delete media from Cloudinary if it exists
      if (story.story && story.story.length > 0) {
         await Promise.all(story.story.map(async (storyUrl) => {
-          const publicId = storyUrl.split("/").pop().split(".")[0]
-          await cloudinary.uploader.destroy(publicId)
-        }))
+            const publicId = storyUrl.split("/").pop().split(".")[0]
+            
+            // Determine the resource type (image or video)
+            const resourceType = storyUrl.includes('.mp4') || storyUrl.includes('.mov') || storyUrl.includes('.avi') ? 'video' : 'image'
+          
+            await cloudinary.uploader.destroy(publicId, { resource_type: resourceType })
+          }))         
       }
-
             return res.status(410).json(null)
         }
 
@@ -165,32 +168,49 @@ exports.getstory = async (req, res) => {
 }
 
 
-exports.getAllstorys = async (req, res) => {
+exports.getAllStories = async (req, res) => {
     try {
         const id = req.user.userId
 
-        let user = await playerModel.findById(id) || await agentModel.findById(id)
+        // Find the user in playerModel or agentModel
+        const user = await playerModel.findById(id) || await agentModel.findById(id)
         if (!user) {
             return res.status(400).json({
                 error: "No user found."
             })
         }
 
-        const story = await storyModel.find()
+        // Fetch all stories
+        const stories = await storyModel.find()
+        const validStories = []
 
-        if (!story) {
-            return res.status(200).json(null)
+        for (let story of stories) {
+            const timeCreated = new Date(story.date)
+            const expiresIn = new Date(timeCreated.getTime() + 24 * 60 * 60 * 1000) // 24 hours from creation
+            const currentTime = new Date()
+
+            if (currentTime > expiresIn) {
+                // Delete the story from the database
+                await storyModel.deleteOne({ _id: story._id })
+
+                // Delete media from Cloudinary if it exists
+                if (story.story && story.story.length > 0) {
+                    await Promise.all(story.story.map(async (storyUrl) => {
+                        const publicId = storyUrl.split("/").pop().split(".")[0]
+
+                        // Determine the resource type (image or video)
+                        const resourceType = storyUrl.includes('.mp4') || storyUrl.includes('.mov') || storyUrl.includes('.avi') ? 'video' : 'image'
+
+                        await cloudinary.uploader.destroy(publicId, { resource_type: resourceType })
+                    }))
+                }
+            } else {
+                // Add to valid stories array if the story hasn't expired
+                validStories.push(story)
+            }
         }
-
-        res.status(200).json({
-            story: story.story,
-            text: story.text,
-            likes: story.likes,
-            comments: story.comments,
-            views: story.views,
-            owner: story.owner,
-            time: story.time,
-        })
+        // Return remaining valid stories
+        res.status(200).json(validStories)
 
     } catch (error) {
         res.status(500).json({
@@ -206,7 +226,7 @@ exports.likestory = async (req, res) => {
         const storyId = req.params.storyId
 
         // Search for user in both playerModel and agentModel
-        let user = await playerModel.findById(id) || await agentModel.findById(id)
+        const user = await playerModel.findById(id) || await agentModel.findById(id)
         if (!user) {
             return res.status(404).json({
                 error: "user not found"
@@ -280,7 +300,7 @@ exports.unlikestory = async (req, res) => {
         const storyId = req.params.storyId
 
         // Search for user in both playerModel and agentModel
-        let user = await playerModel.findById(id) || await agentModel.findById(id)
+        const user = await playerModel.findById(id) || await agentModel.findById(id)
         if (!user) {
             return res.status(404).json({
                 error: "user not found"
@@ -357,9 +377,11 @@ exports.deletestory = async (req, res) => {
              // Delete media from Cloudinary if it exists
      if (story.story && story.story.length > 0) {
         await Promise.all(story.story.map(async (storyUrl) => {
-          const publicId = storyUrl.split("/").pop().split(".")[0]
-          await cloudinary.uploader.destroy(publicId)
-        }))
+            const publicId = storyUrl.split("/").pop().split(".")[0]
+            // Determine the resource type (image or video)
+            const resourceType = storyUrl.includes('.mp4') || storyUrl.includes('.avi') ? 'video' : 'image'
+            await cloudinary.uploader.destroy(publicId, { resource_type: resourceType })
+          }))      
       }
 
         // Delete the story
