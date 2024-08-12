@@ -1,38 +1,43 @@
 const notificationModel = require("../models/notificationModel")
-const playerModel =  require("../models/playerModel")
-const agentModel =  require("../models/agentModel")
-
+const playerModel = require("../models/playerModel")
+const agentModel = require("../models/agentModel")
 
 
 exports.getAllNotifications = async (req, res) => {
     try {
-        const id = req.user.userId
-
-        const user = await agentModel.findById(id).populate('notifications') || await playerModel.findById(id).populate('notifications')
+        const id = req.user.userId;
+        
+        // Check if the user exists in either agentModel or playerModel
+        const user = await agentModel.findById(id) || await playerModel.findById(id);
 
         if (!user) {
             return res.status(404).json({
                 message: "User not found."
-            })
+            });
         }
 
-        const notifications = user.notifications.map(notification => ({
-            id: notification._id,
-            notification: notification.notification, 
-            date: notification.Date 
-        }))
+        // Retrieve all notifications for the user
+        const notifications = await notificationModel.find({recipient: id});
 
-        if (!notifications) {
+        if (notifications.length === 0) {
             return res.status(404).json({
-                message: "No notification yet"
-            })
+                message: "No notifications found."
+            });
         }
 
-        res.status(200).json(notifications)
+        // Return the list of notifications
+        res.status(200).json({
+            count: notifications.length,
+            notifications: notifications.map(notification => ({
+                id: notification._id,
+                notification: notification.notification,
+                date: notification.Date
+            }))
+        });
     } catch (error) {
         res.status(500).json({
             message: error.message
-        })
+        });
     }
 }
 
@@ -40,22 +45,21 @@ exports.getAllNotifications = async (req, res) => {
 exports.getNotificationById = async (req, res) => {
     try {
         const id = req.user.userId
-        const {notificationId} = req.params
+        const { notificationId } = req.params
 
+        // Check if the user exists in either agentModel or playerModel
         const user = await agentModel.findById(id) || await playerModel.findById(id)
-
         if (!user) {
             return res.status(404).json({
                 message: "User not found."
             })
         }
 
-        // Check if the notification exists and belongs to the user
+        // Check if the notification exists and is in the user's notifications field
         const notification = await notificationModel.findOne({ _id: notificationId, recipient: id })
-
         if (!notification) {
             return res.status(404).json({
-                message: "Notification not found"
+                message: "Only owner can access this notification"
             })
         }
 
@@ -73,18 +77,27 @@ exports.getNotificationById = async (req, res) => {
 }
 
 
+
 exports.deleteNotification = async (req, res) => {
     try {
         const id = req.user.userId
         const { notificationId } = req.params
 
         const user = await playerModel.findById(id) || await agentModel.findById(id)
-
         if (!user) {
             return res.status(404).json({
                  error: "User not found" 
                 })
         }
+
+        // Check if the notification exists and is in the user's notifications field
+        const notification = await notificationModel.findOne({ _id: notificationId, recipient: id })
+
+        if (!notification) {
+            return res.status(404).json({
+           message: "Unauthorized"
+          })
+        } 
 
         const deleteNotification = await notificationModel.findByIdAndDelete(notificationId)
 

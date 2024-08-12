@@ -17,16 +17,16 @@ const notificationSchema = new mongoose.Schema({
     type:String,
 },
 
-  recipient: {
-  type: mongoose.Schema.Types.ObjectId,
-  required: true,
-  refPath: 'recipientModel'
-},
-
   recipientModel: {
   type: String,
   required: true,
   enum: ['agent', 'player']
+},
+
+  recipient: {
+  type: mongoose.Schema.Types.ObjectId,
+  required: true,
+  refPath: 'recipientModel'
 },
 
   Date:{
