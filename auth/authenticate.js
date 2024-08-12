@@ -30,7 +30,7 @@ const authenticate = async (req, res, next) => {
 
         if(decodedToken.name === "TokenExpiredError"){
             return res.status(400).json({
-                error:"user logged Out... please login to continue"
+                error:"session expired.... login to continue"
             })
         }else if(decodedToken.name === "JsonWebTokenError"){
             return res.status(400).json({
