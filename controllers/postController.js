@@ -191,7 +191,7 @@ exports.getPostByDescription = async (req, res) => {
 
         if (posts.length === 0) {
             return res.status(404).json({
-                error: `No posts with description '${description}' were found`
+                error: `No posts with description '${description}' was found`
             })
         }
 
