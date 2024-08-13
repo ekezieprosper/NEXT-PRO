@@ -45,8 +45,6 @@ exports.signupPlayer = async (req, res) => {
             })
         }
 
-
-
         // Check if the email already exists in the agent database
         const Email = await agentModel.findOne({ email })
         if (Email) {
