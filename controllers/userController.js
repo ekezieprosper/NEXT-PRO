@@ -96,8 +96,6 @@ exports.signupPlayer = async (req, res) => {
             })
         }
     } catch (error) {
-        console.log(error.message)
-        
         res.status(500).json({
             error: error.message
         })
@@ -418,9 +416,9 @@ exports.forgotPassword = async (req, res) => {
 
         // Respond with success message
         res.status(200).json({
-            message: 'An OTP code has been sent to your email.'
+            message: 'check to your email.'
         })
-    } catch (err) {
+    } catch (error) {
         res.status(500).json({
             error: error.message
         })
@@ -463,7 +461,7 @@ exports.resetPassword = async (req, res) => {
             message: `your new password has been saved`
         })
 
-    } catch (err) {
+    } catch (error) {
         res.status(500).json({
             error: error.message
         })
@@ -613,14 +611,11 @@ exports.updateEmail = async (req, res) => {
             email: user.email,
         })
     } catch (error) {
-        console.log(error.message)
-
         res.status(500).json({
             error: error.message
         })
     }
 }
-
 
 
 exports.updateUserProfile = async (req, res) => {
@@ -663,7 +658,6 @@ exports.updateUserProfile = async (req, res) => {
             relationship_status: user.relationship_status && user.relationship_status.trim() !== "" ? user.relationship_status : "single"
         })
     } catch (error) {
-        // Handle any errors
         res.status(500).json({
             error: error.message
         })

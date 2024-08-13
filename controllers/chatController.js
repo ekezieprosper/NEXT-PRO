@@ -197,7 +197,6 @@ exports.createGroupImage = async (req, res) => {
        groupImage: group.groupImage 
       })
   } catch (error) {
-    console.error(error.message)
     res.status(500).json({ 
       error: error.message 
     })
