@@ -5,7 +5,6 @@ const agentModel = require("../models/agentModel")
 const chatModel = require("../models/chatModel")
 const messageModel = require("../models/messageModel")
 const fs = require("fs")
-const emoji = require('node-emoji')
 const notificationModel = require("../models/notificationModel")
 
 
@@ -28,16 +27,17 @@ exports.createstory = async (req, res) => {
                 media = await Promise.all(req.files.map(async (file) => {
                     const result = await cloudinary.uploader.upload(file.path, { resource_type: 'auto' })
 
-            // Delete the file from local storage
-          fs.unlink(file.path, (err) => {
-            if (err) {
-              console.error('Failed to delete local file', err)
-            }
-          })
-            
-          return result.secure_url
+                    // Delete the file from local storage
+                    fs.unlink(file.path, (err) => {
+                        if (err) {
+                            console.error('Failed to delete local file', err)
+                        }
+                    })
+
+                    return result.secure_url
                 }))
             } catch (uploadError) {
+                console.error("Error uploading files:", uploadError)
                 return res.status(500).json({
                     error: "Error uploading files."
                 })
@@ -47,44 +47,36 @@ exports.createstory = async (req, res) => {
         // Validate that at least one of text or media is present
         if (!text && media.length === 0) {
             return res.status(400).json({
-                error: "No text or story was provided."
+                error: "No text or media was provided."
             })
         }
 
-        // Process text to convert emoji shortcodes to actual emojis
-        if (text) {
-            text = emoji.emojify(text)
+        // Create a new story
+        const story = new storyModel({
+            text: text,
+            story: media,
+            owner: id
+        })
+        await story.save()
+
+        const response = {
+            id: story._id,
+            text: story.text,
+            story: story.story,
+            likes: story.likes ,
+            comments: story.comments,
+            views: story.views,
+            time: story.time,
         }
-   // Create a new story
-   const story = new storyModel({
-    text,
-    story: media,
-    owner: id
-    })
-    await story.save()
-
-    const response = {
-       id: story._id,
-        story: story.story,
-        likes: story.likes,
-       comments: story.comments,
-        views: story.views,
-       time: story.time
-    }
-
-    // Add text to response if it was provided
-        if (text) {
-    response.text = text
-    }
 
         // Notify all followers about the new story
         const followers = user.followers
-        await Promise.all(followers.map(async followerId => {
+        await Promise.all(followers.map(async (followerId) => {
             const follower = await playerModel.findById(followerId) || await agentModel.findById(followerId)
             if (follower) {
                 const recipientModel = follower instanceof agentModel ? 'agent' : 'player'
                 const notificationData = {
-                notification: `${user.userName} recently added to ${user.gender === 'male' ? 'his' : 'her'} story: ${story._id}.`,
+                notification: `${user.userName} recently added a story: ${story._id}.`,
                 recipient: followerId,
                 recipientModel: recipientModel
                 }
@@ -104,6 +96,7 @@ exports.createstory = async (req, res) => {
         })
     }
 }
+
 
 
 exports.getstory = async (req, res) => {

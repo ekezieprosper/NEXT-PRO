@@ -4,36 +4,36 @@ const playerModel = require("../models/playerModel")
 const agentModel = require("../models/agentModel")
 const fs = require("fs")
 const notificationModel = require("../models/notificationModel")
-const emoji = require('node-emoji')
 
 
 
 exports.createPost = async (req, res) => {
     try {
         const id = req.user.userId
-        let { description } = req.body
+        const { description } = req.body
 
+        // Fetch user
         const user = await playerModel.findById(id) || await agentModel.findById(id)
         if (!user) {
-            return res.status(400).json({
-                error: "No user found."
+            return res.status(404).json({
+                error: "User not found."
             })
         }
 
+        // Handle media uploads
         let media = []
         if (req.files && req.files.length > 0) {
             try {
                 media = await Promise.all(req.files.map(async (file) => {
-                    const result = await cloudinary.uploader.upload(file.path, { resource_type: 'auto' })
+                const result = await cloudinary.uploader.upload(file.path, { resource_type: 'auto' })
 
-         // Delete the file from local storage
-          fs.unlink(file.path, (err) => {
-            if (err) {
-              console.error('Failed to delete local file', err)
-            }
-          })
+                fs.unlink(file.path, (err) => {
+                if (err) {
+                     console.error('Failed to delete local file', err)
+                    }
+                })
 
-        return result.secure_url
+                    return result.secure_url
                 }))
             } catch (uploadError) {
                 return res.status(500).json({
@@ -45,13 +45,8 @@ exports.createPost = async (req, res) => {
         // Validate that at least one of description or media is present
         if (!description && media.length === 0) {
             return res.status(400).json({
-                error: "No description or post was provided."
+                error: "No description or media provided."
             })
-        }
-
-        // Process description to convert emoji shortcodes to actual emojis
-        if (description) {
-            description = emoji.emojify(description)
         }
 
         // Create a new post
@@ -65,14 +60,10 @@ exports.createPost = async (req, res) => {
         const response = {
             postId: post._id,
             post: post.post,
+            description: post.description,
             likes: post.likes,
             comments: post.comments,
             date: post.Date
-        }
-
-        // Add description to response if it was provided
-        if (description) {
-            response.description = description
         }
 
         // Notify all followers about the new post
@@ -89,18 +80,22 @@ exports.createPost = async (req, res) => {
                 const message = new notificationModel(notificationData)
                 await message.save()
 
+                // Add the notification to the follower's notifications list
                 follower.notifications.push(message._id)
                 await follower.save()
             }
         }))
+
+        // Send response
         res.status(201).json(response)
 
-    } catch (error) {    
+    } catch (error) {
         res.status(500).json({
             error: error.message
         })
     }
 }
+
 
 
 exports.getPost = async (req, res) => {
@@ -358,10 +353,10 @@ exports.deletePost = async (req, res) => {
           // Delete media from Cloudinary if it exists
      if (post.post && post.post.length > 0) {
         await Promise.all(post.post.map(async (postUrl) => {
-            const publicId = postUrl.split("/").pop().split(".")[0];
+            const publicId = postUrl.split("/").pop().split(".")[0]
             // Determine the resource type (image or video)
-            const resourceType = postUrl.includes('.mp4') || postUrl.includes('.avi') ? 'video' : 'image';
-            await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
+            const resourceType = postUrl.includes('.mp4') || postUrl.includes('.avi') ? 'video' : 'image'
+            await cloudinary.uploader.destroy(publicId, { resource_type: resourceType })
           }))  
       }
 

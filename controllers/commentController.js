@@ -3,7 +3,6 @@ const playerModel = require("../models/playerModel")
 const agentModel = require("../models/agentModel")
 const notificationModel = require("../models/notificationModel")
 const postModel = require('../models/postModel')
-const emoji = require('node-emoji')
 
 
 exports.newComment = async (req, res) => {
@@ -32,8 +31,6 @@ exports.newComment = async (req, res) => {
          message: "Post not found" 
         })
     }
-
-    comment = emoji.emojify(comment)
 
     // Create new comment
     const newComment = new commentModel({
@@ -203,7 +200,7 @@ exports.editComment = async (req, res) => {
     const updatedComment = await comment.save()
 
     res.status(200).json(updatedComment.comment)
-    
+
   } catch (error) {
     res.status(500).json({
       error: error.message

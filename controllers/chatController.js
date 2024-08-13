@@ -283,7 +283,7 @@ exports.sendMessage = async (req, res) => {
 
     const newMessage = new messageModel({
       chatId,
-      text: text || null,
+      text: text,
       sender: id,
       media: message
     })
@@ -292,10 +292,10 @@ exports.sendMessage = async (req, res) => {
 
     const response = {
       id: newMessage._id,
+      text: newMessage.text,
       media: newMessage.media,
       from: newMessage.sender,
-      time: newMessage.time,
-      text: newMessage.text
+      time: newMessage.time
     }
 
     res.status(201).json(response)
