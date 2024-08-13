@@ -25,10 +25,10 @@ app.use(cors())
 // Routers
 app.use(userRouter)
 app.use(postRouter)
-app.use(commentRouter)
 app.use(chatRouter)
 app.use(storyRouter)
 app.use(notificationRouter)
+app.use(commentRouter)
 
 
 const io = socket(server, {

@@ -28,7 +28,7 @@ exports.signupPlayer = async (req, res) => {
          if (!position || !subPosition) {
             return res.status(400).json({
                 error: 'Both position and subPosition are required.'
-            });
+            })
         }
 
         // Check if the subPosition is valid for the given position
@@ -37,12 +37,12 @@ exports.signupPlayer = async (req, res) => {
             'Midfielder': ['CAM', 'CDM', 'CM', 'RM', 'LM'],
             'Defender': ['CB', 'LB', 'RB', 'LWB', 'RWB'],
             'Goalkeeper': ['GK']
-        };
+        }
 
         if (!positionSubpositionMap[position]?.includes(subPosition)) {
             return res.status(400).json({
                 error: `${subPosition} is not a valid subposition for the selected position (${position}).`
-            });
+            })
         }
 
 
@@ -98,10 +98,10 @@ exports.signupPlayer = async (req, res) => {
             })
         }
     } catch (error) {
-        console.log(error.message);
+        console.log(error.message)
         
         res.status(500).json({
-            error: "Internal server error"
+            error: error.message
         })
     }
 }
@@ -161,7 +161,7 @@ exports.signupAgent = async (req, res) => {
         }
     } catch (error) {
         res.status(500).json({
-            error: "Internal server error"
+            error: error.message
         })
     }
 }
@@ -214,7 +214,7 @@ exports.resendOTP = async (req, res) => {
         })
     } catch (error) {
         res.status(500).json({
-            error: "Internal server error"
+            error: error.message
         })
     }
 }
@@ -282,7 +282,7 @@ exports.verify = async (req, res) => {
 
     } catch (error) {
         return res.status(500).json({
-            error: "Internal server error"
+            error: error.message
         })
     }
 }
@@ -342,7 +342,7 @@ exports.logIn = async (req, res) => {
         })
     } catch (error) {
         res.status(500).json({
-            error: "Internal server error"
+            error: error.message
         })
     }
 }
@@ -386,7 +386,7 @@ exports.logOut = async (req, res) => {
         })
     } catch (error) {
         res.status(500).json({
-            error: "Internal server error"
+            error: error.message
         })
     }
 }
@@ -424,7 +424,7 @@ exports.forgotPassword = async (req, res) => {
         })
     } catch (err) {
         res.status(500).json({
-            error: 'Internal server error'
+            error: error.message
         })
     }
 }
@@ -467,7 +467,7 @@ exports.resetPassword = async (req, res) => {
 
     } catch (err) {
         res.status(500).json({
-            error: "Internal server error"
+            error: error.message
         })
     }
 }
@@ -516,7 +516,7 @@ exports.changePassword = async (req, res) => {
         })
     } catch (error) {
         res.status(500).json({
-            error: "Internal server error"
+            error: error.message
         })
     }
 }
@@ -564,7 +564,7 @@ exports.updateUserName = async (req, res) => {
         })
     } catch (error) {
         res.status(500).json({
-            error: "Internal server error"
+            error: error.message
         })
     }
 }
@@ -618,7 +618,7 @@ exports.updateEmail = async (req, res) => {
         console.log(error.message)
 
         res.status(500).json({
-            error: 'Internal server error',
+            error: error.message
         })
     }
 }
@@ -667,7 +667,7 @@ exports.updateUserProfile = async (req, res) => {
     } catch (error) {
         // Handle any errors
         res.status(500).json({
-            error: "Bad internet connection."
+            error: error.message
         })
     }
 }
@@ -712,7 +712,7 @@ exports.createProfileImg = async (req, res) => {
 
     } catch (error) {
         return res.status(500).json({
-            error: "Bad internet connection"
+            error: error.message
         })
     }
 }
@@ -739,7 +739,7 @@ exports.deleteProfileImg = async (req, res) => {
         res.status(200).json(user.profileImg)
     } catch (error) {
         res.status(500).json({
-            error: "Internal server error"
+            error: error.message
         })
     }
 }
@@ -783,7 +783,7 @@ exports.getUsers = async (req, res) => {
 
     } catch (error) {
         res.status(500).json({
-            error: "Internal server error"
+            error: error.message
         })
     }
 }
@@ -791,87 +791,83 @@ exports.getUsers = async (req, res) => {
 
 exports.follow = async (req, res) => {
     try {
-        const id = req.user.userId
-
-        const { entityId } = req.body
-
-        if (id === entityId) {
-            return res.status(400).json({
-                error: "Cannot follow yourself."
-            })
-        }
-
-        // Find the user
-        const user = await agentModel.findById(id) || await playerModel.findById(id)
-        if (!user) {
-            return res.status(404).json({
-                error: "User not found."
-            })
-        }
-
-        // Find the entity based on entityId in both agentModel and playerModel
-        const entity = await agentModel.findById(entityId) || await playerModel.findById(entityId)
-        if (!entity) {
-            return res.status(404).json({
-                error: "user not found."
-            })
-        }
-
-        // Get the userName of the entity
-        const userName = entity.userName
-
-        // Ensure unique follow relationships
-        const Following = user.following.includes(entityId)
-        const Follow = entity.followers.includes(id)
-
-        if (Following && Follow) {
-            return res.status(400).json({
-                error: `${userName} is already followed by you.`
-            })
-        }
-
-        // Update the following list of the user
-        if (!Following) {
-            user.following.push(entityId)
-        }
-
-        // Update the followers list of the entity
-        if (!Follow) {
-            entity.followers.push(id)
-            const notification = `${user.userName} started following you`
-            const Notification = {
-                notification,
-                recipient: entity._id,
-                recipientModel: entity instanceof agentModel ? 'agent' : 'player'
-            }
-
-            if (entity instanceof agentModel) {
-                Notification.agent = entity._id
-
-            } else if (entity instanceof playerModel) {
-                Notification.player = entity._id
-            }
-
-            const message = new notificationModel(Notification)
-            await message.save()
-
-            // Add the notification to the entity's notifications list
-            entity.notifications.push(message._id)
-        }
-
-        // Save changes
-        await Promise.all([user.save(), entity.save()])
-
-        return res.status(200).json({
-            followers: entity.followers.length
+      const id = req.user.userId
+      const { entityId } = req.body
+  
+      if (id === entityId) {
+        return res.status(400).json({
+          error: "Cannot follow yourself."
         })
+      }
+  
+      // Find the user in either agentModel or playerModel
+      const user = await agentModel.findById(id) || await playerModel.findById(id)
+      if (!user) {
+        return res.status(404).json({
+          error: "User not found."
+        })
+      }
+  
+      // Find the entity to be followed in agentModel or playerModel
+      const entity = await agentModel.findById(entityId) || await playerModel.findById(entityId)
+      if (!entity) {
+        return res.status(404).json({
+          error: "User not found."
+        })
+      }
+  
+      // Ensure unique follow relationships
+      const following = user.following.includes(entityId)
+      const follow = entity.followers.includes(id)
+  
+      if (following && follow) {
+        return res.status(400).json({
+          error: `${entity.userName} is already followed by you.`
+        })
+      }
+  
+      // Update the following list of the user
+      if (!following) {
+        user.following.push(entityId)
+      }
+  
+      // Update the followers list of the entity and create a notification
+      if (!follow) {
+        entity.followers.push(id)
+  
+        const notification = {
+          notification: `${user.userName} started following you`,
+          recipient: entity._id,
+          recipientModel: entity instanceof agentModel ? 'agent' : 'player'
+        }
+  
+        // Assign the correct field based on the model
+        if (entity instanceof agentModel) {
+          notification.agent = entity._id
+        } else if (entity instanceof playerModel) {
+          notification.player = entity._id
+        }
+  
+        const message = new notificationModel(notification)
+        await message.save()
+  
+        // Add the notification to the entity's notifications list
+        entity.notifications.push(message._id)
+      }
+  
+      // Save changes
+      await Promise.all([user.save(), entity.save()])
+  
+      return res.status(200).json({
+        followers: entity.followers.length
+      })
     } catch (error) {
-        res.status(500).json({
-            error: "Internal server error"
-        })
+      res.status(500).json({
+        error: error.message
+      })
     }
-}
-
+  }
+  
 
 exports.unfollow = async (req, res) => {
     try {
@@ -921,7 +917,7 @@ exports.unfollow = async (req, res) => {
         })
     } catch (error) {
         res.status(500).json({
-            error: "Internal server error"
+            error: error.message
         })
     }
 }
@@ -986,7 +982,7 @@ exports.getOneFollower = async (req, res) => {
         })
     } catch (error) {
         res.status(500).json({
-            error: "Internal server error"
+            error: error.message
         })
     }
 }
@@ -1058,7 +1054,7 @@ exports.getAllFollowers = async (req, res) => {
         })
     } catch (error) {
         res.status(500).json({
-            error: "Internal server error"
+            error: error.message
         })
     }
 }
@@ -1098,7 +1094,7 @@ exports.getOneFollowing = async (req, res) => {
         })
     } catch (error) {
         res.status(500).json({
-            error: "Internal server error"
+            error: error.message
         })
     }
 }
@@ -1168,7 +1164,7 @@ exports.getAllFollowing = async (req, res) => {
         })
     } catch (error) {
         res.status(500).json({
-            error: "Internal server error"
+            error: error.message
         })
     }
 }
@@ -1209,7 +1205,7 @@ exports.subscription = async (req, res) => {
         })
     } catch (error) {
         res.status(500).json({
-            error: "Internal server error"
+            error: error.message
         })
     }
 }
@@ -1260,7 +1256,7 @@ exports.getSubscription = async (req, res) => {
 
     } catch (error) {
         res.status(500).json({
-            error: "Internal server error"
+            error: error.message
         })
     }
 }
@@ -1293,7 +1289,7 @@ exports.deleteAccount = async (req, res) => {
 
     } catch (error) {
         res.status(500).json({
-            error: "Internal server error"
+            error: error.message
         })
     }
 }

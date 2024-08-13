@@ -2,6 +2,8 @@ const storyModel = require("../models/stories")
 const cloudinary = require("../media/cloudinary")
 const playerModel = require("../models/playerModel")
 const agentModel = require("../models/agentModel")
+const chatModel = require("../models/chatModel")
+const messageModel = require("../models/messageModel")
 const fs = require("fs")
 const emoji = require('node-emoji')
 const notificationModel = require("../models/notificationModel")
@@ -82,9 +84,9 @@ exports.createstory = async (req, res) => {
             if (follower) {
                 const recipientModel = follower instanceof agentModel ? 'agent' : 'player'
                 const notificationData = {
-                    notification: `${user.userName} recently added to ${user.gender === 'male' ? 'his' : 'her'} story: ${story._id}.`,
-                    recipient: followerId,
-                    recipientModel: recipientModel
+                notification: `${user.userName} recently added to ${user.gender === 'male' ? 'his' : 'her'} story: ${story._id}.`,
+                recipient: followerId,
+                recipientModel: recipientModel
                 }
                 const message = new notificationModel(notificationData)
                 await message.save()
@@ -98,7 +100,7 @@ exports.createstory = async (req, res) => {
 
     } catch (error) {
         res.status(500).json({
-            error: "Internal server error"
+            error: error.message
         })
     }
 }
@@ -124,27 +126,6 @@ exports.getstory = async (req, res) => {
             })
         }
 
-        const timeCreated = new Date(story.date)
-        const expiresIn = new Date(timeCreated.getTime() + 24 * 60 * 60 * 1000)
-        const currentTime = new Date()
-
-        if (currentTime > expiresIn) {
-            await storyModel.deleteOne({ _id: story._id })
-
-        // Delete media from Cloudinary if it exists
-     if (story.story && story.story.length > 0) {
-        await Promise.all(story.story.map(async (storyUrl) => {
-            const publicId = storyUrl.split("/").pop().split(".")[0]
-            
-            // Determine the resource type (image or video)
-            const resourceType = storyUrl.includes('.mp4') || storyUrl.includes('.mov') || storyUrl.includes('.avi') ? 'video' : 'image'
-          
-            await cloudinary.uploader.destroy(publicId, { resource_type: resourceType })
-          }))         
-      }
-            return res.status(410).json(null)
-        }
-
         if (id !== story.owner.toString() && !story.views.includes(id)) {
             story.views.push(id)
             await story.save()
@@ -162,7 +143,7 @@ exports.getstory = async (req, res) => {
 
     } catch (error) {
         res.status(500).json({
-            error: "Internal server error"
+            error: error.message
         })
     }
 }
@@ -172,49 +153,137 @@ exports.getAllStories = async (req, res) => {
     try {
         const id = req.user.userId
 
-        // Find the user in playerModel or agentModel
+        // Find the user in userModel
         const user = await playerModel.findById(id) || await agentModel.findById(id)
         if (!user) {
             return res.status(400).json({
-                error: "No user found."
+                 error: "No user found." 
             })
         }
 
-        // Fetch all stories
-        const stories = await storyModel.find()
+        const currentTime = new Date()
+
+        // Fetch valid stories that haven't expired yet
+        const stories = await storyModel.find({
+            date: { $gte: new Date(currentTime.getTime() - 24 * 60 * 60 * 1000) }
+        })
+
+        if (stories.length === 0) {
+            return res.status(404).json({
+                 message: "No story" 
+            })
+        }
+
         const validStories = []
 
         for (let story of stories) {
             const timeCreated = new Date(story.date)
-            const expiresIn = new Date(timeCreated.getTime() + 24 * 60 * 60 * 1000) // 24 hours from creation
-            const currentTime = new Date()
+            const expiresIn = new Date(timeCreated.getTime() + 24 * 60 * 60 * 1000)
 
             if (currentTime > expiresIn) {
                 // Delete the story from the database
-                await storyModel.deleteOne({ _id: story._id })
+                await storyModel.findByIdAndDelete(story._id)
 
                 // Delete media from Cloudinary if it exists
                 if (story.story && story.story.length > 0) {
-                    await Promise.all(story.story.map(async (storyUrl) => {
-                        const publicId = storyUrl.split("/").pop().split(".")[0]
+                await Promise.all(story.story.map(async (storyUrl) => {
+                const publicId = storyUrl.split("/").pop().split(".")[0]
 
-                        // Determine the resource type (image or video)
-                        const resourceType = storyUrl.includes('.mp4') || storyUrl.includes('.mov') || storyUrl.includes('.avi') ? 'video' : 'image'
+                // Determine the resource type (image or video)
+                const resourceType = storyUrl.match(/\.(mp4|mov|avi)$/) ? 'video' : 'image'
 
-                        await cloudinary.uploader.destroy(publicId, { resource_type: resourceType })
-                    }))
+                await cloudinary.uploader.destroy(publicId, { resource_type: resourceType })
+                  }))
                 }
             } else {
-                // Add to valid stories array if the story hasn't expired
                 validStories.push(story)
             }
         }
+
         // Return remaining valid stories
         res.status(200).json(validStories)
 
     } catch (error) {
+        res.status(500).json({ 
+            error: error.message 
+        })
+    }
+}
+
+
+exports.replyStory = async (req, res) => {
+    try {
+        const { userId } = req.user
+        const { storyId } = req.params
+
+        // Find the user
+        const user = await playerModel.findById(userId) || await agentModel.findById(userId)
+        if (!user) {
+            return res.status(404).json({
+                message: "User not found"
+            })
+        }
+
+        // Find the story
+        const story = await storyModel.findById(storyId)
+        if (!story) {
+            return res.status(404).json({
+                message: "Story not found"
+            })
+        }
+
+        // Check if a chat already exists between the user and the story owner
+        let chat = await chatModel.findOne({
+            members: { $all: [userId, story.owner] },
+            groupName: { $eq: "" } 
+        })
+
+        if (!chat) {
+            // Create a new chat if one doesn't exist
+            chat = await chatModel.create({
+                members: [userId, story.owner],
+                groupName: ""
+            })
+
+            if (!chat) {
+                return res.status(400).json({
+                    error: "Failed to create chat"
+                })
+            }
+        }
+
+        const {text} = req.body
+        if (!text) {
+            return res.status(400).json({
+                message: "Text is required to reply to the story."
+            })
+        }
+
+        // Create and save the new message
+        const newMessage = new messageModel({
+            story: storyId,
+            chatId: chat._id,
+            sender: userId,
+            text
+        })
+
+        await newMessage.save()
+
+        // Add the message to the chat and save it
+        chat.chats.push(newMessage._id)
+        await chat.save()
+
+        res.status(201).json({
+            id: newMessage._id,
+            story: storyId,
+            text,
+            from: newMessage.sender,
+            time: newMessage.time
+        })
+
+    } catch (error) {
         res.status(500).json({
-            error: "Internal server error"
+            error: error.message
         })
     }
 }
@@ -286,7 +355,7 @@ exports.likestory = async (req, res) => {
         })
     } catch (error) {
          res.status(500).json({
-            error: "Internal server error"
+            error: error.message
         })
     }
 }
@@ -339,7 +408,7 @@ exports.unlikestory = async (req, res) => {
         })
     } catch (error) {
         res.status(500).json({
-            error: "Internal server error"
+            error: error.message
         })
     }
 }
@@ -393,7 +462,7 @@ exports.deletestory = async (req, res) => {
         })
     } catch (error) {
         res.status(500).json({
-            error: "Internal server error"
+            error: error.message
         })
     }
 }

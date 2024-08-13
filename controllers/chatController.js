@@ -48,7 +48,7 @@ exports.startChat = async (req, res) => {
 
   } catch (error) {
     res.status(500).json({
-      error: "Internal server error"
+      error: error.message
     })
   }
 }
@@ -133,7 +133,7 @@ exports.createGroupChat = async (req, res) => {
 
   } catch (error) {
     res.status(500).json({
-       error: "Internal server error" 
+       error: error.message 
       })
   }
 }
@@ -199,7 +199,7 @@ exports.createGroupImage = async (req, res) => {
   } catch (error) {
     console.error(error.message)
     res.status(500).json({ 
-      error: "Internal server error" 
+      error: error.message 
     })
   }
 }
@@ -213,7 +213,7 @@ exports.getChat = async (req, res) => {
     res.status(200).json(chats)
   } catch (error) {
     res.status(500).json({
-       error: "Internal server error" 
+       error: error.message 
       })
   }
 }
@@ -245,16 +245,16 @@ exports.sendMessage = async (req, res) => {
         })
     }
 
-    if (chat.block.includes(chatId)) {
+    // Check if the chat is blocked
+    if (chat.block.includes(id)) {
       const blockedByUser = await playerModel.findById(chat.blockedBy) || await agentModel.findById(chat.blockedBy)
-      const blockedByName = blockedByUser ? blockedByUser.userName : 'Unknown user'
+      const blockedByName = blockedByUser.userName
       return res.status(400).json({
         error: `This chat is blocked by ${blockedByName}. You can't send a message.`
       })
     }
 
     let message = []
-
     if (req.files && req.files.length > 0) {
       message = await Promise.all(req.files.map(async (file) => {
         try {
@@ -269,9 +269,7 @@ exports.sendMessage = async (req, res) => {
 
           return result.secure_url
         } catch (error) {
-          return res.status(400).json({
-             error: 'Error uploading files' 
-            })
+          throw new Error('Error uploading files')
         }
       }))
     }
@@ -283,12 +281,9 @@ exports.sendMessage = async (req, res) => {
         })
     }
 
-    // Replace emoji shortcodes in text with actual emojis
-    const emojifiedText = text ? emoji.emojify(text) : ''
-
     const newMessage = new messageModel({
       chatId,
-      text: emojifiedText,
+      text: text || null,
       sender: id,
       media: message
     })
@@ -299,12 +294,8 @@ exports.sendMessage = async (req, res) => {
       id: newMessage._id,
       media: newMessage.media,
       from: newMessage.sender,
-      time: newMessage.time
-    }
-
-    // Add text to response if it is included
-    if (emojifiedText) {
-      response.text = emojifiedText
+      time: newMessage.time,
+      text: newMessage.text
     }
 
     res.status(201).json(response)
@@ -315,7 +306,7 @@ exports.sendMessage = async (req, res) => {
 
   } catch (error) {
     res.status(500).json({ 
-      error: 'Internal server error' 
+      error: error.message 
     })
   }
 }
@@ -386,7 +377,7 @@ if (chat.block.includes(chatId)) {
 
   } catch (error) {
     res.status(500).json({
-      error: "Internal server error"
+      error: error.message
     })
   }
 }
@@ -419,7 +410,7 @@ exports.editMessage = async (req, res) => {
        })
   } catch (error) {
     res.status(500).json({ 
-      error: "Internal server error"
+      error: error.message
      })
   }
 }
@@ -444,7 +435,7 @@ exports.copyMessage = async (req, res) => {
       })
   } catch (error) {
     res.status(500).json({
-       error: "Internal server error" 
+       error: error.message 
       })
   }
 }
@@ -485,7 +476,7 @@ exports.reactOnChat = async (req, res) => {
 
   } catch (error) {
     res.status(500).json({ 
-      error: "Internal server error"
+      error: error.message
      })
   }
 }
@@ -521,7 +512,7 @@ exports.getChatmessage = async (req, res) => {
 
   } catch (error) {
     res.status(500).json({ 
-      error: "Internal server error" 
+      error: error.message 
     })
   }
 }
@@ -571,7 +562,7 @@ exports.blockChat = async (req, res) => {
 
   } catch (error) {
     return res.status(500).json({
-      error: "Internal server error"
+      error: error.message
     })
   }
 }
@@ -630,7 +621,7 @@ exports.unblockChat = async (req, res) => {
 
   } catch (error) {
     return res.status(500).json({
-      error: "Internal server error"
+      error: error.message
     })
   }
 }
@@ -694,9 +685,9 @@ exports.deleteMessage = async (req, res) => {
       message: responseMessage
     })
 
-  } catch (err) {
+  } catch (error) {
     res.status(500).json({
-      error: "Internal server error"
+      error: error.message
     })
   }
 }
@@ -754,7 +745,7 @@ exports.addMembers = async (req, res) => {
     })
   } catch (error) {
     res.status(500).json({
-      error: "Internal server error"
+      error: error.message
     })
   }
 }
@@ -817,11 +808,10 @@ exports.forwardMessage = async (req, res) => {
 
   } catch (error) {
     return res.status(500).json({
-       error: "Internal server error." 
+       error: error.message 
     })
   }
 }
-
 
 
 exports.editAdmin = async (req, res) => {
@@ -864,7 +854,7 @@ exports.editAdmin = async (req, res) => {
      })
   } catch (error) {
     res.status(500).json({
-       error: "Internal server error" 
+       error: error.message 
       })
   }
 }
@@ -938,7 +928,7 @@ exports.removeMembers = async (req, res) => {
 
   } catch (error) {
     res.status(500).json({
-      error: "Internal server error"
+      error: error.message
     })
   }
 }
@@ -1005,7 +995,7 @@ exports.exitGroup = async (req, res) => {
 
   } catch (error) {
     res.status(500).json({
-      error: "Internal server error."
+      error: error.message
     })
   }
 }
@@ -1052,7 +1042,7 @@ exports.deleteChat = async (req, res) => {
     })
   } catch (error) {
     res.status(500).json({ 
-      error: "Internal server error"
+      error: error.message
      })
   }
 }

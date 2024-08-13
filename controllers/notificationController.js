@@ -5,41 +5,37 @@ const agentModel = require("../models/agentModel")
 
 exports.getAllNotifications = async (req, res) => {
     try {
-        const id = req.user.userId;
-        
-        // Check if the user exists in either agentModel or playerModel
-        const user = await agentModel.findById(id) || await playerModel.findById(id);
+        const id = req.user.userId
 
+        const user = await playerModel.findById(id).populate('notifications') || await agentModel.findById(id).populate('notifications')
         if (!user) {
             return res.status(404).json({
-                message: "User not found."
-            });
+                 message: "User not found." 
+            })
         }
 
-        // Retrieve all notifications for the user
-        const notifications = await notificationModel.find({recipient: id});
+        const notifications = user.notifications.map(notification => ({
+            id: notification._id,
+            notification: notification.notification,
+            date: notification.Date
+        }))
 
+        // Check if there are any notifications
         if (notifications.length === 0) {
             return res.status(404).json({
-                message: "No notifications found."
-            });
+             message: "No notifications yet." 
+            })
         }
 
-        // Return the list of notifications
-        res.status(200).json({
-            count: notifications.length,
-            notifications: notifications.map(notification => ({
-                id: notification._id,
-                notification: notification.notification,
-                date: notification.Date
-            }))
-        });
+        // Return the notifications
+        res.status(200).json(notifications)
     } catch (error) {
         res.status(500).json({
-            message: error.message
-        });
+             message: error.message 
+        })
     }
 }
+
 
 
 exports.getNotificationById = async (req, res) => {

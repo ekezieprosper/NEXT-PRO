@@ -5,8 +5,6 @@ const agentModel = require("../models/agentModel")
 const fs = require("fs")
 const notificationModel = require("../models/notificationModel")
 const emoji = require('node-emoji')
-const date = new Date().toLocaleString('en-NG', {day: '2-digit', month: 'short'})
-const createdOn = `${date}`
 
 
 
@@ -84,7 +82,7 @@ exports.createPost = async (req, res) => {
             if (follower) {
                 const recipientModel = follower instanceof agentModel ? 'agent' : 'player'
                 const notificationData = {
-                    notification: `${user.userName} just created a new post: ${post._id}.         ${createdOn} `,
+                    notification: `${user.userName} created a new post: ${post._id}`,
                     recipient: followerId,
                     recipientModel: recipientModel
                 }
@@ -99,7 +97,7 @@ exports.createPost = async (req, res) => {
 
     } catch (error) {    
         res.status(500).json({
-            error: "Internal server error"
+            error: error.message
         })
     }
 }
@@ -135,7 +133,7 @@ exports.getPost = async (req, res) => {
 
     } catch (error) {
         res.status(500).json({
-            error: "Internal server error"
+            error: error.message
         })
     }
 }
@@ -162,7 +160,7 @@ exports.getAllPosts = async (req, res) => {
 
     } catch (error) {
         res.status(500).json({
-            error: "Internal server error"
+            error: error.message
         })
     }
 }
@@ -208,7 +206,7 @@ exports.getPostByDescription = async (req, res) => {
 
     } catch (error) {
         res.status(500).json({
-            error: "Internal server error"
+            error: error.message
         })
     }
 }
@@ -282,7 +280,7 @@ exports.likePost = async (req, res) => {
         })
     } catch (error) {
         res.status(500).json({
-            error: "Internal server error"
+            error: error.message
         })
     }
 }
@@ -331,7 +329,7 @@ exports.unlikePost = async (req, res) => {
         })
     } catch (error) {
         res.status(500).json({
-            error: "Internal server error"
+            error: error.message
         })
     }
 }
@@ -376,7 +374,7 @@ exports.deletePost = async (req, res) => {
         })
     } catch (error) {
         res.status(500).json({
-            error: 'unable to delete post.Bad internet conection'
+            error: error.message
         })
     }
 }

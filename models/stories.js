@@ -1,13 +1,14 @@
 const mongoose = require("mongoose")
+
 const time = new Date().toLocaleString('en-NG', { 
     timeZone: 'Africa/Lagos', 
     hour: '2-digit', 
     minute: '2-digit', 
     hourCycle: 'h12' 
-  });
+  })
   
-  const [hour, minute, period] = time.split(/[:\s]/);
-  const createdOn = `${hour}:${minute} ${period}`;
+  const [hour, minute, period] = time.split(/[:\s]/)
+  const createdOn = `${hour}:${minute} ${period}`
   
 
 const storySchema = new mongoose.Schema({
@@ -25,11 +26,6 @@ const storySchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId
     }],
 
-    comments: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "comments"
-    }],
-
     views: [{
         type: mongoose.Schema.Types.ObjectId,
     }],
@@ -37,8 +33,8 @@ const storySchema = new mongoose.Schema({
     date: {
         type: Date,
         default: Date.now,
-        expires: 86400 //24hrs in seconds
-      },
+        expires: "1d"
+    },
 
     time: {
         type: String,
@@ -59,6 +55,7 @@ const storySchema = new mongoose.Schema({
     },
 })
 
-
+  
 const Story = mongoose.model("stories", storySchema)
-module.exports = Story
+
+module.exports = Story 

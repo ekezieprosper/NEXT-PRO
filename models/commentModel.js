@@ -2,7 +2,7 @@ const mongoose = require("mongoose")
 
 const commentSchema = new mongoose.Schema({
 
-    comment: { type: String, required: false},
+   comment: { type: String, required: false},
 
     owner: {
         type: mongoose.Schema.Types.ObjectId
@@ -12,12 +12,6 @@ const commentSchema = new mongoose.Schema({
         type: mongoose.SchemaTypes.ObjectId,
         ref: "post"
     },
-
-    story: {
-        type: mongoose.SchemaTypes.ObjectId,
-        ref: "stories"
-    },
-
 
     player: {
         type: mongoose.Schema.Types.ObjectId,
