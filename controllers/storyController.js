@@ -231,6 +231,12 @@ exports.replyStory = async (req, res) => {
             groupName: { $eq: "" } 
         })
 
+        if (userId === story.owner) {
+            return res.status(401).json({
+              error:"cannot initialize chat for yourself"
+            })
+          }
+
         if (!chat) {
             // Create a new chat if one doesn't exist
             chat = await chatModel.create({
