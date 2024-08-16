@@ -20,7 +20,7 @@ const sendOtp = async (agent, player, otp) => {
         const userName = agent ? agent.userName : player.userName
         const email = agent ? agent.email : player.email
         const text = `Verification code ${otp}`
-        const verificationLink = `https://elitefootball.onrender.com/verify/${agent?._id||player?._id}`
+        const verificationLink = `https://pronext.onrender.com/verify/${agent?._id||player?._id}`
         const html = DynamicEmail(userName, otp, verificationLink)
         await sendEmail({ email, subject, text, html })
     } catch (error) {

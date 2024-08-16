@@ -1,4 +1,4 @@
-const DynamicEmail = (userName, otp, verificationLink) => {
+const deleteMail = (userName, supportTeam) => {
     return `
     <!DOCTYPE html>
     <html lang="en">
@@ -6,7 +6,7 @@ const DynamicEmail = (userName, otp, verificationLink) => {
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <title>Email Verification</title>
+        <title>Account Suspension Notification</title>
         <style>
             body, table, td, a {
                 -webkit-text-size-adjust: 100%;
@@ -70,12 +70,6 @@ const DynamicEmail = (userName, otp, verificationLink) => {
                 margin: 0 0 8px 0;
                 padding: 0;
             }
-            .otp {
-                font-size: 14px;
-                font-weight: bold;
-                color: #333333;
-                margin-top: 10px;
-            }
         </style>
     </head>
     <body>
@@ -85,15 +79,9 @@ const DynamicEmail = (userName, otp, verificationLink) => {
                     <img src="https://res.cloudinary.com/dqjixyz71/image/upload/v1714691315/jmf6xunogjxcydxevfue.jpg" alt="ProNest Logo">
                 </div>
                 <div class="content">
-                    <h1>Hi <b style="color: green;">${userName}</b>!</h1>
-
-                    <p style="text-align: left; font-size: 14px; font-weight: 320; margin-bottom: 0; color: black;">
-                        We’re excited to have you join our community. To get started, verify your account by clicking the link below:
-                    </p>
-                    <a href="${verificationLink}" class="button" style="padding: 8px 16px; display: inline-block; border-radius: 3px; margin-top: 20px; background: green; color: white; text-decoration: none;">
-                        Verify your account
-                    </a>
-                    <p class="otp">Your verification code is: <b>${otp}</b></p>
+                    
+                    <p><b>${userName}</b>, We regret to inform you that your account has been suspended due to violations of our terms of service. This action was taken after careful review and in accordance with our policies to ensure the security and integrity of our platform.</p>
+                    <p>If you believe this is a mistake or have any questions regarding the suspension, please contact our support team for further assistance at <a href="mailto:${supportTeam}" style="color: #007bff; text-decoration: underline;">support team</a>. We are here to help you resolve this matter as quickly as possible.</p>
                 </div>  
                 <div class="footer">
                     <p>© ${new Date().getFullYear()} pronext, all rights reserved.</p>
@@ -105,4 +93,4 @@ const DynamicEmail = (userName, otp, verificationLink) => {
     `
 }
 
-module.exports = DynamicEmail
+module.exports = deleteMail

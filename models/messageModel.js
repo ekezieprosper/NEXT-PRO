@@ -12,15 +12,26 @@ const time = new Date().toLocaleString('en-NG', {
 
 const messageSchema = new mongoose.Schema({
 
-    chatId:{type: String},
+    chatId:{
+      type: String
+    },
 
-    sender:{type: mongoose.Schema.Types.ObjectId, required: false},
+    sender:{
+      type: mongoose.Schema.Types.ObjectId,
+       required: false
+    },
 
-    text:{type: String},
+    text:{
+      type: String
+    },
 
-    voice: {type: String},
+    voice:{
+      type: String
+    },
 
-    media: [{type: String}],
+    media:[{
+      type: String
+    }],
 
     reactions: [],
 

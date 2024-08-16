@@ -204,6 +204,46 @@ exports.createGroupImage = async (req, res) => {
 }
 
 
+exports.deleteGroupImg = async (req, res) => {
+  try {
+      const id = req.user.userId
+      const { groupId } = req.params
+
+      // Fetch the group chat
+      const group = await chatModel.findById(groupId)
+      if (!group) {
+        return res.status(404).json({ 
+          error: "Group chat not found." 
+        })
+      }
+  
+      // Check if the user is a member of the group
+      if (!group.members.includes(id)) {
+        return res.status(400).json({ 
+          error: "You are not a member of this group." 
+        })
+      }
+
+      // Delete profile image from Cloudinary if exists
+      if (group.groupImage) {
+          const oldImage = group.groupImage.split("/").pop().split(".")[0]
+          await cloudinary.uploader.destroy(oldImage)
+      }
+
+      // Update profile image URL in the database to default
+      group.groupImage = "https://i.pinimg.com/564x/cd/c4/88/cdc4883428375f1badaae113f2333b22.jpg"
+      await group.save()
+
+      // Send success response
+      res.status(200).json(group.groupImage)
+  } catch (error) {
+      res.status(500).json({
+          error: error.message
+      })
+  }
+}
+
+
 exports.getChat = async (req, res) => {
   try {
     const id = req.user.userId

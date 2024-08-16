@@ -9,7 +9,7 @@ const signUp = (req, res, next) => {
       .messages({
         'string.base': 'Username must be a string',
         'string.empty': 'Username cannot be empty',
-        'string.min': 'userame must be at least {#limit} characters long',
+        'string.min': 'userName is weak',
         'string.pattern.base': 'Only numbers, hyphens, and underscores can be added if needed in the userName',
         'any.required': 'Username is required'
       }),
@@ -33,6 +33,8 @@ const signUp = (req, res, next) => {
       'string.base': 'gender must be a number',
       'string.min': 'gender must be minimum of {#limit} characters',
       'string.max': 'gender must be maximum of {#limit} characters',
+      'any.required': 'gender: male or female?'
+      
     })
   })
 

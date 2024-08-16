@@ -2,13 +2,13 @@ const router = require("express").Router()
 const {
     reactOnChat, copyMessage, editMessage, startChat, getChat, sendMessage, getChatmessage, exitGroup, createGroupChat,
     sendVoiceNote, createGroupImage, forwardMessage, blockChat, unblockChat, deleteChat, addMembers,editAdmin,deleteMessage,
-    removeMembers} = require("../controllers/chatController")
+    removeMembers, deleteGroupImg} = require("../controllers/chatController")
 
 const upload = require("../media/multer")
 const uploader = require("../media/multerFiles")
 const authenticate = require("../auth/authenticate")
 
-router.post('/start_chat', authenticate, startChat)
+router.post('/start_chat',authenticate, startChat)
 router.post('/send_message', authenticate, uploader.array("media", 30), sendMessage)
 router.post('/voice_note', authenticate, upload.single("voice"), sendVoiceNote)
 router.post('/group', authenticate, createGroupChat)
@@ -21,6 +21,7 @@ router.get('/direct/inbox', authenticate, getChat)
 router.get('/direct/m/:chatId', authenticate, getChatmessage)
 router.post('/remove_member', authenticate, removeMembers)
 router.post('/group_image', authenticate, upload.single("groupImage"), createGroupImage)
+router.delete('/groupImg/:groupId', authenticate, deleteGroupImg)
 router.put('/edit_text', authenticate, editMessage)
 router.post('/copy', authenticate, copyMessage)
 router.post('/react', authenticate, reactOnChat)

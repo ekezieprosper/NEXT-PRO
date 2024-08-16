@@ -2,7 +2,6 @@ const playerModel = require("../models/playerModel")
 const agentModel = require("../models/agentModel")
 const notificationModel = require("../models/notificationModel")
 const OTPModel = require('../models/otpModel')
-const subscriptionModel = require("../models/subscriptionModel")
 const cloudinary = require("../media/cloudinary")
 const bcrypt = require("bcrypt")
 const jwt = require("jsonwebtoken")
@@ -22,7 +21,13 @@ exports.home = (req, res) => {
 exports.signupPlayer = async (req, res) => {
     try {
         // Required information for registration
-        const { userName, password, gender, position, subPosition, email } = req.body
+        const { userName, password, gender, position, subPosition, email, country } = req.body
+
+        if (!country) {
+            return res.status(400).json({
+                error: 'country is required.'
+            })
+        }
 
          // Check if position and subPosition are provided
          if (!position || !subPosition) {
@@ -70,6 +75,7 @@ exports.signupPlayer = async (req, res) => {
         const player = await playerModel.create({
             userName: userName.toLowerCase(),
             password: hashpass,
+            country,
             gender,
             position,
             subPosition,
@@ -106,7 +112,13 @@ exports.signupPlayer = async (req, res) => {
 exports.signupAgent = async (req, res) => {
     try {
         // required information for registration
-        const { userName, password, gender, email } = req.body
+        const { userName, password, gender, email, country } = req.body
+
+        if (!country) {
+            return res.status(400).json({
+                error: 'country is required.'
+            })
+        }
 
         // Check if the email exists in the player's database
         const Email = await playerModel.findOne({ email })
@@ -132,6 +144,7 @@ exports.signupAgent = async (req, res) => {
         // create an instance of an agent
         const agent = await agentModel.create({
             userName: userName.toLowerCase(),
+            country,
             password: hashpass,
             gender,
             email: email.toLowerCase(),
@@ -200,7 +213,7 @@ exports.resendOTP = async (req, res) => {
         // Send the OTP to the user's email
         const subject = "Email Verification"
         const text = `Verification code ${otp}`
-        const verificationLink = `https://ProNest.onrender.com/verify/${agent?._id || player?._id}`
+        const verificationLink = `https://pronext.onrender.com/verify/${agent?._id||player?._id}`
         const html = resendOtpEmail(user.userName, otp, verificationLink)
         await sendEmail({ email: user.email, subject, text, html })
 
@@ -410,7 +423,7 @@ exports.forgotPassword = async (req, res) => {
         // Send email with OTP and verification link
         const userName = user.userName
         const subject = 'Reset Password'
-        const verificationLink = `https://ProNest.onrender.com/reset_password/${token}`
+        const verificationLink = `https://pronext.onrender.com/reset_password/${token}`
         const html = resetFunc(userName, verificationLink)
         await sendEmail({ email: user.email, subject, html })
 
@@ -622,13 +635,12 @@ exports.updateUserProfile = async (req, res) => {
     try {
         const id = req.user.userId
 
-        const { name, locatedAt, phoneNumber, Birthday, Bio, relationship_status } = req.body
+        const { name, phoneNumber, Birthday, Bio, relationship_status } = req.body
 
         // Initialize an update object
         const updateFields = {}
 
         if (name !== undefined) updateFields.name = name
-        if (locatedAt !== undefined) updateFields.locatedAt = locatedAt
         if (phoneNumber !== undefined) updateFields.phoneNumber = phoneNumber
         if (Birthday !== undefined) updateFields.Birthday = Birthday
         if (Bio !== undefined) updateFields.Bio = Bio
@@ -651,7 +663,6 @@ exports.updateUserProfile = async (req, res) => {
         // Return the updated user information, ensuring default values are returned if the fields are undefined
         res.status(200).json({
             name: user.name !== undefined ? user.name : "Default Name",
-            locatedAt: user.locatedAt !== undefined ? user.locatedAt : "Default Location",
             phoneNumber: user.phoneNumber !== undefined ? user.phoneNumber : "Default Phone Number",
             Birthday: user.Birthday !== undefined ? user.Birthday : "Default Birthday",
             Bio: user.Bio !== undefined ? user.Bio : "Default Bio",
@@ -680,7 +691,9 @@ exports.createProfileImg = async (req, res) => {
         // Validate file upload
         const file = req.file
         if (!file || !file.path) {
-            return res.status(400).json({ error: "File upload is required" })
+            return res.status(400).json({ 
+                error: "File upload is required" 
+            })
         }
 
         // Upload image to Cloudinary
@@ -724,7 +737,7 @@ exports.deleteProfileImg = async (req, res) => {
         }
 
         // Update profile image URL in the database to default
-        user.profileImg = "https://t3.ftcdn.net/jpg/05/53/79/60/360_F_553796090_XHrE6R9jwmBJUMo9HKl41hyHJ5gqt9oz.jpg"
+        user.profileImg = "https://i.pinimg.com/564x/76/f3/f3/76f3f3007969fd3b6db21c744e1ef289.jpg"
         await user.save()
 
         // Send success response
@@ -1154,98 +1167,6 @@ exports.getAllFollowing = async (req, res) => {
             currentPage: page,
             nextPage
         })
-    } catch (error) {
-        res.status(500).json({
-            error: error.message
-        })
-    }
-}
-
-
-exports.subscription = async (req, res) => {
-    try {
-        const id = req.user.userId
-        const { plan } = req.body
-
-        if (!plan) {
-            return res.status(400).json({
-                error: "Plan is required."
-            })
-        }
-
-        let user = await playerModel.findById(id) || await agentModel.findById(id)
-        if (!user) {
-            return res.status(404).json({
-                error: "User not found."
-            })
-        }
-
-        // Create new subscription
-        const subscription = new subscriptionModel({ plan, owner: id })
-        user.subscribed = true
-        await user.save()
-        subscription.subscribed = true
-        await subscription.save()
-
-        res.status(201).json({
-            message: `subscription for $${subscription.amount} oneOff ${plan} plan was successfull.`,
-            id: subscription._id,
-            plan: subscription.plan,
-            subscribedAt: subscription.Date,
-            expires_in: `${subscription.expiresIn}`
-
-        })
-    } catch (error) {
-        res.status(500).json({
-            error: error.message
-        })
-    }
-}
-
-
-exports.getSubscription = async (req, res) => {
-    try {
-        const id = req.user.userId
-
-        // Find the user in either model
-        const user = await playerModel.findById(id) || await agentModel.findById(id)
-        if (!user) {
-            return res.status(404).json({
-                message: "User not found"
-            })
-        }
-
-        // Find the subscription by owner ID
-        const subscription = await subscriptionModel.findOne({ owner: id })
-
-        if (!subscription) {
-            return res.status(404).json({
-                message: "No active subscription"
-            })
-        }
-
-        // Check if the current user is the owner of the subscription
-        if (id !== subscription.owner.toString()) {
-            return res.status(401).json({
-                error: "Unauthorized."
-            })
-        }
-
-        // Check if the subscription is expired and delete it
-        if (subscription.isExpired()) {
-            await subscriptionModel.deleteOne({ _id: subscription._id })
-            user.subscribed = false
-            await user.save()
-            return res.status(404).json({
-                message: `Your $${subscription.amount} ${subscription.plan} subscription plan has expired`
-            })
-        }
-
-        // Respond with the active subscription details
-        return res.status(200).json({
-            message: `You have an active subscription valid till ${subscription.expiresIn}`
-        })
-
     } catch (error) {
         res.status(500).json({
             error: error.message

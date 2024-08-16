@@ -3,9 +3,16 @@ const date = new Date().toLocaleString('en-NG', { day: '2-digit', month: 'short'
 const createdOn = `${date}`
 
 const playerSchema = new mongoose.Schema({
-    userName: { type: String, required: true, unique: true },
+    userName: { 
+        type: String, 
+        required: true,
+         unique: true 
+    },
 
-    password: { type: String, required: true },
+    password: { 
+        type: String, 
+        required: true 
+    },
 
     gender: {
         type: String,
@@ -13,22 +20,40 @@ const playerSchema = new mongoose.Schema({
         enum: ["male", "female"]
     },
 
-    email: { type: String, required: true },
+    email: { 
+        type: String,
+        required: true 
+    },
+
+    country: { 
+        type: String,
+        required:true 
+   },
 
     profileImg: {
         type: String,
-        default: "https://t3.ftcdn.net/jpg/05/53/79/60/360_F_553796090_XHrE6R9jwmBJUMo9HKl41hyHJ5gqt9oz.jpg"
+        default: "https://i.pinimg.com/564x/76/f3/f3/76f3f3007969fd3b6db21c744e1ef289.jpg"
     },
 
-    name: { type: String, default: "" },
+    name: {
+        type: String,
+        default: "" 
+    },
 
-    Bio: { type: String, default: "" },
+    Bio: { 
+        type: String,
+         default: "" 
+    },
 
-    phoneNumber: { type: String, default: "" },
+    phoneNumber: { 
+        type: String, 
+        default: "" 
+    },
 
-    Birthday: { type: String, default: "" },
-
-    locatedAt: { type: String, default: "" },
+    Birthday: {
+         type: String,
+          default: "" 
+    },
 
     position: {
         type: String,
@@ -58,7 +83,10 @@ const playerSchema = new mongoose.Schema({
         default: "single"
     },
 
-    isVerified: { type: Boolean, default: false },
+    isVerified: { 
+        type: Boolean,
+         default: false 
+    },
 
     followers: [{
         type: mongoose.Schema.Types.ObjectId,

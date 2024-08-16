@@ -9,6 +9,7 @@ const postRouter = require("./routers/postRouter")
 const commentRouter = require("./routers/commentRouter")
 const chatRouter = require("./routers/chatRouter")
 const storyRouter = require("./routers/storyRouter")
+const adminRouter = require("./routers/adminRouter")
 const notificationRouter = require("./routers/notificationRouter")
 
 
@@ -28,6 +29,7 @@ app.use(postRouter)
 app.use(chatRouter)
 app.use(storyRouter)
 app.use(notificationRouter)
+app.use(adminRouter)
 app.use(commentRouter)
 
 

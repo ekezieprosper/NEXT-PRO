@@ -1,5 +1,6 @@
 const agentModel = require("../models/agentModel")
 const playerModel = require("../models/playerModel")
+const adminModel = require("../models/adminModel")
 const jwt = require("jsonwebtoken")
 require("dotenv").config()
 
@@ -21,33 +22,42 @@ const authenticate = async (req, res, next) => {
       })
     }
 
-    const decodedToken = jwt.verify(token, process.env.jwtkey, (error,payload)=>{
-            if(error){
-              return error
-            }
-            return payload
-        });
-
-        if(decodedToken.name === "TokenExpiredError"){
-            return res.status(400).json({
-                error:"session expired.... login to continue"
-            })
-        }else if(decodedToken.name === "JsonWebTokenError"){
-            return res.status(400).json({
-                error:"Invalid Token"
-            })
-        }else if(decodedToken.name === "NotBeforeError"){
-            return res.status(400).json({
-                error:"Token not active"
-            })
-        }
+    let decodedToken
+    try {
+      decodedToken = jwt.verify(token, process.env.jwtkey)
+    } catch (error) {
+      if (error.name === "TokenExpiredError") {
+        return res.status(400).json({
+          error: "Session expired.... sign in to continue.",
+        })
+      } else if (error.name === "JsonWebTokenError") {
+        return res.status(400).json({
+          error: "Invalid token.",
+        })
+      } else if (error.name === "NotBeforeError") {
+        return res.status(400).json({
+          error: "Token not active.",
+        })
+      } else {
+        return res.status(400).json({
+          error: "Token verification failed.",
+        })
+      }
+    }
 
     const user = await agentModel.findById(decodedToken.userId) || await playerModel.findById(decodedToken.userId)
     if (!user) {
       return res.status(404).json({
-        error: "Unauthorized",
+        error: "Unauthorized.",
       })
-    }   
+    }
+
+    const admin = await adminModel.findOne({ suspended: user._id })
+    if (admin) {
+      return res.status(403).json({
+        message: "This account has been is suspended.",
+      })
+    }
 
     req.user = decodedToken
     next()

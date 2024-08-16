@@ -150,55 +150,37 @@ exports.getAllStories = async (req, res) => {
         const user = await playerModel.findById(id) || await agentModel.findById(id)
         if (!user) {
             return res.status(400).json({
-                 error: "No user found." 
+                error: "No user found."
             })
         }
 
-        const currentTime = new Date()
-
-        // Fetch valid stories that haven't expired yet
-        const stories = await storyModel.find({
-            date: { $gte: new Date(currentTime.getTime() - 24 * 60 * 60 * 1000) }
-        })
+        // Retrieve stories for the user (assuming stories are related to users)
+        const stories = await storyModel.find()
 
         if (stories.length === 0) {
             return res.status(404).json({
-                 message: "No story" 
+                message: "No story"
             })
         }
 
-        const validStories = []
-
-        for (let story of stories) {
-            const timeCreated = new Date(story.date)
-            const expiresIn = new Date(timeCreated.getTime() + 24 * 60 * 60 * 1000)
-
-            if (currentTime > expiresIn) {
-                // Delete the story from the database
-                await storyModel.findByIdAndDelete(story._id)
-
-                // Delete media from Cloudinary if it exists
-                if (story.story && story.story.length > 0) {
+        // Delete media from Cloudinary if it exists
+        await Promise.all(stories.map(async (story) => {
+            if (story.story && story.story.length > 0) {
                 await Promise.all(story.story.map(async (storyUrl) => {
                 const publicId = storyUrl.split("/").pop().split(".")[0]
 
-                // Determine the resource type (image or video)
                 const resourceType = storyUrl.match(/\.(mp4|mov|avi)$/) ? 'video' : 'image'
 
                 await cloudinary.uploader.destroy(publicId, { resource_type: resourceType })
-                  }))
-                }
-            } else {
-                validStories.push(story)
+                }))
             }
-        }
+        }))
 
-        // Return remaining valid stories
-        res.status(200).json(validStories)
+        res.status(200).json(stories)
 
     } catch (error) {
-        res.status(500).json({ 
-            error: error.message 
+        res.status(500).json({
+            error: error.message
         })
     }
 }

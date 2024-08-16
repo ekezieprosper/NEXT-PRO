@@ -12,10 +12,12 @@ const chatSchema = new mongoose.Schema({
 
     groupImage: {
       type: String, 
-      required: false
+      default: "https://i.pinimg.com/564x/cd/c4/88/cdc4883428375f1badaae113f2333b22.jpg",
     },
 
-    members: [{ type: mongoose.Schema.Types.ObjectId}],
+    members: [{
+       type: mongoose.Schema.Types.ObjectId
+      }],
 
     admin: [{
       type: mongoose.Schema.Types.ObjectId
