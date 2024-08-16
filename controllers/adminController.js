@@ -202,7 +202,7 @@ exports.suspendUser = async (req, res) => {
         await sendMail(user)
 
         return res.status(200).json({
-            message: "User suspended"
+            message: "suspended"
         })
 
     } catch (error) {
@@ -238,7 +238,7 @@ exports.unSuspendUser = async(req, res)=>{
          }
 
         await admin.save()
-        
+
         // Redirect the user to the login page
         return res.redirect('https://pronext.onrender.com/logIn')
         

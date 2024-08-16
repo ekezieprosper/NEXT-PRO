@@ -55,7 +55,7 @@ const authenticate = async (req, res, next) => {
     const admin = await adminModel.findOne({ suspended: user._id })
     if (admin) {
       return res.status(403).json({
-        message: "This account has been is suspended.",
+        message: "This account has been suspended.",
       })
     }
 
