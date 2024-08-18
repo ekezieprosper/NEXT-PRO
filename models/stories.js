@@ -1,4 +1,6 @@
 const mongoose = require("mongoose")
+const cloudinary = require("../media/cloudinary")
+
 
 const time = new Date().toLocaleString('en-NG', { 
     timeZone: 'Africa/Lagos', 
@@ -55,6 +57,18 @@ const storySchema = new mongoose.Schema({
     },
 })
 
+// Middleware to handle media deletion after the story expires
+storySchema.post('remove', async function (story) {
+    try {
+        await Promise.all(story.story.map(async (storyUrl) => {
+            const publicId = storyUrl.split("/").pop().split(".")[0]
+            const resourceType = storyUrl.match(/\.(mp4|mov|avi)$/) ? 'video' : 'image'
+            await cloudinary.uploader.destroy(publicId, { resource_type: resourceType })
+        }))
+    } catch (error) {
+        console.error("Error deleting media:", error)
+    }
+})
   
 const Story = mongoose.model("stories", storySchema)
 

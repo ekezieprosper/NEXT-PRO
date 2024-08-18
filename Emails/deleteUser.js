@@ -3,10 +3,10 @@ const sendEmail = require("../Emails/email");
 
 const sendMail = async (agent, player) => {
     try {
-        const subject = "Your account has been suspended for 365 days";
+        const subject = "Your account has been suspended";
         const userName = agent ? agent.userName : player.userName;
         const email = agent ? agent.email : player.email;
-        const text = `Your account has been suspended for 365 days`
+        const text = `Your account has been suspended`
 
         const supportTeam = `elitefootball234@gmail.com`;
 

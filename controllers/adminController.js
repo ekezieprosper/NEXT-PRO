@@ -10,9 +10,9 @@ const cloudinary = require("../media/cloudinary")
 
 
 
-exports.signUp = async(req, res)=>{
+exports.signUp = async (req, res) => {
     try {
-        const {userName, gender, password, confirmPassword} = req.body
+        const { userName, gender, password, confirmPassword } = req.body
 
         if (!userName) {
             return res.status(400).json({
@@ -20,18 +20,18 @@ exports.signUp = async(req, res)=>{
             })
         }
 
-          const searchUsername = await adminModel.findOne({userName})
-          if (searchUsername) {
-              return res.status(403).json({
-                  error: `${userName} is taken.`
-              })
-          }
+        const searchUsername = await adminModel.findOne({ userName })
+        if (searchUsername) {
+            return res.status(403).json({
+                error: `${userName} is taken.`
+            })
+        }
 
-          if (userName.length < 4) {
+        if (userName.length < 4) {
             return res.status(400).json({
                 error: `${userName} is weak.`
             })
-          }
+        }
 
         if (!gender) {
             return res.status(400).json({
@@ -45,7 +45,7 @@ exports.signUp = async(req, res)=>{
             })
         }
 
-        
+
         if (password.length < 5) {
             return res.status(400).json({
                 error: `password is weak`
@@ -58,26 +58,26 @@ exports.signUp = async(req, res)=>{
             })
         }
 
-         const saltpass = bcrypt.genSaltSync(10)
-         const hashpass = bcrypt.hashSync(password, saltpass)
- 
-         const admin = await adminModel.create({
-             userName: userName.toLowerCase(),
-             password: hashpass,
-             gender
-         })
+        const saltpass = bcrypt.genSaltSync(10)
+        const hashpass = bcrypt.hashSync(password, saltpass)
 
-         if(!admin){
+        const admin = await adminModel.create({
+            userName: userName.toLowerCase(),
+            password: hashpass,
+            gender
+        })
+
+        if (!admin) {
             return res.status(500).json({
-               error: "error occured while creating this account."
+                error: "error occured while creating this account."
             })
         }
-        else{
+        else {
             const token = jwt.sign({
                 adminId: admin._id,
                 userName: admin.userName
             }, process.env.jwtkey, { expiresIn: '900000000000d' })
-    
+
             return res.status(200).json({
                 admin,
                 token
@@ -106,8 +106,8 @@ exports.ProfileImgage = async (req, res) => {
         // Validate file upload
         const file = req.file
         if (!file || !file.path) {
-            return res.status(400).json({ 
-                error: "File upload is required" 
+            return res.status(400).json({
+                error: "File upload is required"
             })
         }
 
@@ -137,7 +137,7 @@ exports.ProfileImgage = async (req, res) => {
     }
 }
 
-exports.getAllUsers = async(req, res)=>{
+exports.getAllUsers = async (req, res) => {
     try {
         const id = req.admin.adminId
         const admin = await adminModel.findById(id)
@@ -150,14 +150,14 @@ exports.getAllUsers = async(req, res)=>{
         const players = await playerModel.find()
         const agents = await agentModel.find()
         const users = [...players, ...agents]
-        
-        if(!users || users.length === 0){
+
+        if (!users || users.length === 0) {
             return res.status(404).json({
-                error:"no user available yet"
-          })
+                error: "no user available yet"
+            })
         } else {
             res.status(200).json({
-                total_amount : users.length,
+                total_amount: users.length,
                 users
             })
         }
@@ -197,7 +197,7 @@ exports.suspendUser = async (req, res) => {
 
         // Suspend the user
         admin.suspended.push(id)
-        await admin.save() 
+        await admin.save()
 
         await sendMail(user)
 
@@ -213,7 +213,34 @@ exports.suspendUser = async (req, res) => {
 }
 
 
-exports.unSuspendUser = async(req, res)=>{
+exports.getAllSuspendedUsers = async (req, res) => {
+    try {
+        const id = req.admin.adminId
+
+        const admin = await adminModel.findById(id)
+        if (!admin) {
+            return res.status(404).json({
+                message: "admin not found."
+            })
+        }
+
+        // Check if there are any notifications
+        if (admin.suspended.length === 0) {
+            return res.status(404).json({
+                message: "No suspended user"
+            })
+        }else{
+            res.status(200).json(admin.suspended)
+        }
+    } catch (error) {
+        return res.status(500).json({
+            error: error.message
+        })
+    }
+}
+
+
+exports.unSuspendUser = async (req, res) => {
     try {
         const adminId = req.admin.adminId
         const id = req.params.id
@@ -230,18 +257,18 @@ exports.unSuspendUser = async(req, res)=>{
             })
         }
 
-         // Check if the user has already been suspended
-         const suspendedUser = admin.suspended.indexOf(id)
-         if (suspendedUser !== -1) {
-             // Remove the user's ID from the suspended array
-             admin.suspended.splice(suspendedUser, 1)
-         }
+        // Check if the user has already been suspended
+        const suspendedUser = admin.suspended.indexOf(id)
+        if (suspendedUser !== -1) {
+            // Remove the user's ID from the suspended array
+            admin.suspended.splice(suspendedUser, 1)
+        }
 
         await admin.save()
 
         // Redirect the user to the login page
         return res.redirect('https://pronext.onrender.com/logIn')
-        
+
     } catch (error) {
         return res.status(500).json({
             error: error.message
@@ -256,15 +283,15 @@ exports.deleteUser = async (req, res) => {
         const admin = await adminModel.findById(adminId)
         if (!admin) {
             return res.status(404).json({
-                 message: "Admin not found"
-           })
+                message: "Admin not found"
+            })
         }
 
         const id = req.params.id
         const user = await playerModel.findById(id) || await agentModel.findById(id)
         if (!user) {
             return res.status(404).json({
-                 message: "User not found" 
+                message: "User not found"
             })
         }
 
@@ -278,16 +305,16 @@ exports.deleteUser = async (req, res) => {
         const deleteAcct = await playerModel.findByIdAndDelete(id) || await agentModel.findByIdAndDelete(id)
         if (!deleteAcct) {
             return res.status(400).json({
-                 error: "Unable to delete account" 
+                error: "Unable to delete account"
             })
         }
 
-        res.status(200).json({ 
-            message: "deleted" 
+        res.status(200).json({
+            message: "deleted"
         })
     } catch (error) {
         return res.status(500).json({
-             error: error.message
+            error: error.message
         })
     }
 }
