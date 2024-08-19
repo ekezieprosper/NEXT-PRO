@@ -103,16 +103,6 @@ const playerSchema = new mongoose.Schema({
         ref: "post"
     }],
 
-    subscribed: {
-        type: Boolean,
-        default: false
-    },
-
-    subscription: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'subscription'
-    },
-
     notifications: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'notification'
