@@ -1,4 +1,6 @@
 const mongoose = require("mongoose")
+const countries = require("../enums/countries")
+const countryCodes = require("../enums/countryCodes")
 const date = new Date().toLocaleString('en-NG', { day: '2-digit', month: 'short', year: 'numeric' })
 const createdOn = `${date}`
 
@@ -25,10 +27,12 @@ const playerSchema = new mongoose.Schema({
         required: true 
     },
 
-    country: { 
+    country: {
         type: String,
-        required:true 
-   },
+        required: true,
+        enum: countries,
+        trim: true
+    },
 
     profileImg: {
         type: String,
@@ -45,9 +49,16 @@ const playerSchema = new mongoose.Schema({
          default: "" 
     },
 
+    countryCode: {
+        type: String,
+        enum: countryCodes, 
+        trim: true
+    },
+
     phoneNumber: { 
-        type: String, 
-        default: "" 
+        type: String,
+        trim: true,
+        default: ""
     },
 
     Birthday: {

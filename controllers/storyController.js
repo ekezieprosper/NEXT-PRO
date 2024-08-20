@@ -146,7 +146,6 @@ exports.getAllStories = async (req, res) => {
     try {
         const id = req.user.userId
 
-        // Find the user in userModel
         const user = await playerModel.findById(id) || await agentModel.findById(id)
         if (!user) {
             return res.status(400).json({
@@ -154,27 +153,12 @@ exports.getAllStories = async (req, res) => {
             })
         }
 
-        // Retrieve stories for the user (assuming stories are related to users)
         const stories = await storyModel.find()
-
         if (stories.length === 0) {
             return res.status(404).json({
-                message: "No story"
+                message: "No story yet"
             })
         }
-
-        // Delete media from Cloudinary if it exists
-        await Promise.all(stories.map(async (story) => {
-            if (story.story && story.story.length > 0) {
-                await Promise.all(story.story.map(async (storyUrl) => {
-                const publicId = storyUrl.split("/").pop().split(".")[0]
-
-                const resourceType = storyUrl.match(/\.(mp4|mov|avi)$/) ? 'video' : 'image'
-
-                await cloudinary.uploader.destroy(publicId, { resource_type: resourceType })
-                }))
-            }
-        }))
 
         res.status(200).json(stories)
 

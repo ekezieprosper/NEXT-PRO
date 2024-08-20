@@ -21,10 +21,11 @@ const signUp = (req, res, next) => {
       'any.required': 'Email is required'
     }),
 
-    password: Joi.string().required().pattern(new RegExp('^(?=.*[a-zA-Z])(?=.*[\\d@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$')).messages({
+    password: Joi.string().required().min(8).pattern(new RegExp('^(?=.*[a-zA-Z])(?=.*[\\d@$!%*?&])[A-Za-z\\d@$!%*-._?&]{8,}$')).messages({
       'string.base': 'Password must be a string',
       'string.empty': 'Password cannot be empty',
-      'string.pattern.base': 'Password must be at least 8 characters long, must contain at least one number or special character.',
+      'string.min': 'password is weak',
+      'string.pattern.base': 'pattern must at least contain one number or special character.',
       'any.required': 'Password is required'
     }),
     

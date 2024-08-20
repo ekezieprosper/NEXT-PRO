@@ -1,8 +1,10 @@
 const playerModel = require("../models/playerModel")
 const agentModel = require("../models/agentModel")
+const adminModel = require("../models/adminModel")
 const notificationModel = require("../models/notificationModel")
 const OTPModel = require('../models/otpModel')
 const cloudinary = require("../media/cloudinary")
+const parsePhoneNumber = require('libphonenumber-js')
 const bcrypt = require("bcrypt")
 const jwt = require("jsonwebtoken")
 const fs = require("fs")
@@ -338,6 +340,13 @@ exports.logIn = async (req, res) => {
             })
         }
 
+        const admin = await adminModel.findOne({ suspended: user._id })
+        if (admin) {
+          return res.status(403).json({
+            message: "This account has been suspended.",
+          })
+        }
+
         // Generate JWT token
         const token = jwt.sign({
             userId: user._id,
@@ -635,20 +644,35 @@ exports.updateUserProfile = async (req, res) => {
     try {
         const id = req.user.userId
 
-        const { name, phoneNumber, Birthday, Bio, relationship_status } = req.body
+        const { name, phoneNumber, countryCode, Birthday, Bio, relationship_status } = req.body
+
+        if (!countryCode || !phoneNumber) {
+            return res.status(400).json({
+               error: "Country code and phone number are required." 
+            });
+        }
+
+        // Combine the country code and phone number
+        const fullPhoneNumber = `${countryCode} ${phoneNumber}`
+  
+        // Validate the full phone number
+        const validNumber = parsePhoneNumber(fullPhoneNumber)
+        if (!validNumber.isValid()) {
+            return res.status(400).json({ 
+               error: "Invalid phone number" 
+            })
+        }
 
         // Initialize an update object
         const updateFields = {}
 
         if (name !== undefined) updateFields.name = name
-        if (phoneNumber !== undefined) updateFields.phoneNumber = phoneNumber
+        if (phoneNumber !== undefined) updateFields.phoneNumber = fullPhoneNumber
         if (Birthday !== undefined) updateFields.Birthday = Birthday
         if (Bio !== undefined) updateFields.Bio = Bio
         if (relationship_status !== undefined) updateFields.relationship_status = relationship_status
 
-        // Try updating the user in the agentModel
         let user = await agentModel.findByIdAndUpdate(id, updateFields, { new: true })
-        // If user is not found in agentModel, try updating in playerModel
         if (!user) {
             user = await playerModel.findByIdAndUpdate(id, updateFields, { new: true })
         }
@@ -656,7 +680,7 @@ exports.updateUserProfile = async (req, res) => {
         // If user is still not found, return an error
         if (!user) {
             return res.status(400).json({
-                error: "An unexpected error occurred while updating profile."
+                error: "Unexpected error while updating your profile."
             })
         }
 
