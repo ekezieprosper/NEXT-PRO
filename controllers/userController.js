@@ -191,13 +191,6 @@ exports.resendOTP = async (req, res) => {
             })
         }
 
-        // Check if the account is already verified
-        if (user.isVerified) {
-            return res.status(400).json({
-                error: "this account has already been verified"
-            })
-        }
-
         // Generate 6-digit OTP
         const otp = `${Math.floor(Math.random() * 1000000)}`.padStart(6, '0')
 
@@ -438,7 +431,7 @@ exports.forgotPassword = async (req, res) => {
 
         // Respond with success message
         res.status(200).json({
-            message: 'check to your email.'
+            message: 'A mail has been sent to you.'
         })
     } catch (error) {
         res.status(500).json({
@@ -480,7 +473,7 @@ exports.resetPassword = async (req, res) => {
         await user.save()
 
         res.status(200).json({
-            message: `your new password has been saved`
+            message: `new password is saved`
         })
 
     } catch (error) {
@@ -530,7 +523,7 @@ exports.changePassword = async (req, res) => {
         await user.save()
 
         return res.status(200).json({
-            message: `your new password has been saved`
+            message: `new password is saved`
         })
     } catch (error) {
         res.status(500).json({
@@ -646,45 +639,42 @@ exports.updateUserProfile = async (req, res) => {
 
         const { name, phoneNumber, countryCode, Birthday, Bio, relationship_status } = req.body
 
-        if (!countryCode || !phoneNumber) {
-            return res.status(400).json({
-               error: "Country code and phone number are required." 
-            });
-        }
-
-        // Combine the country code and phone number
-        const fullPhoneNumber = `${countryCode} ${phoneNumber}`
-  
-        // Validate the full phone number
-        const validNumber = parsePhoneNumber(fullPhoneNumber)
-        if (!validNumber.isValid()) {
-            return res.status(400).json({ 
-               error: "Invalid phone number" 
-            })
-        }
-
-        // Initialize an update object
         const updateFields = {}
-
         if (name !== undefined) updateFields.name = name
-        if (phoneNumber !== undefined) updateFields.phoneNumber = fullPhoneNumber
         if (Birthday !== undefined) updateFields.Birthday = Birthday
         if (Bio !== undefined) updateFields.Bio = Bio
         if (relationship_status !== undefined) updateFields.relationship_status = relationship_status
+        if (phoneNumber !== "") {
+            if (!countryCode) {
+                return res.status(400).json({
+                    error: "Country code is required for this phone number"
+                })
+            }
+
+            const fullPhoneNumber = `${countryCode} ${phoneNumber}`
+
+            const validNumber = parsePhoneNumber(fullPhoneNumber)
+            if (!validNumber.isValid()) {
+                return res.status(400).json({
+                    error: "Invalid phone number"
+                })
+            }
+            updateFields.phoneNumber = fullPhoneNumber
+        }else {
+            updateFields.phoneNumber = ""
+        }
 
         let user = await agentModel.findByIdAndUpdate(id, updateFields, { new: true })
         if (!user) {
             user = await playerModel.findByIdAndUpdate(id, updateFields, { new: true })
         }
 
-        // If user is still not found, return an error
         if (!user) {
             return res.status(400).json({
                 error: "Unexpected error while updating your profile."
             })
         }
 
-        // Return the updated user information, ensuring default values are returned if the fields are undefined
         res.status(200).json({
             name: user.name !== undefined ? user.name : "Default Name",
             phoneNumber: user.phoneNumber !== undefined ? user.phoneNumber : "Default Phone Number",
@@ -1102,14 +1092,13 @@ exports.getOneFollowing = async (req, res) => {
             })
         }
 
-        // Search for a following user whose username contains the provided userName
+        const matchingUsers = []
         for (const followingId of user.following) {
             const followingUser = await playerModel.findById(followingId) || await agentModel.findById(followingId)
             if (followingUser && followingUser.userName.includes(userName)) {
-                // Check if this following user follows back
                 const followsBack = followingUser.followers.includes(id)
 
-                return res.status(200).json({
+                matchingUsers.push({
                     id: followingUser._id.toString(),
                     username: followingUser.userName,
                     followsBack
@@ -1117,10 +1106,14 @@ exports.getOneFollowing = async (req, res) => {
             }
         }
 
-        // If no matching user is found, return a 404 response
-        return res.status(404).json({
-            error: "No matching user found in following list."
-        })
+        if (matchingUsers.length === 0) {
+            return res.status(404).json({
+                error: "user not found"
+            })
+        }
+
+        return res.status(200).json(matchingUsers)
+        
     } catch (error) {
         res.status(500).json({
             error: error.message

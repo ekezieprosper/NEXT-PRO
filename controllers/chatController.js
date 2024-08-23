@@ -777,6 +777,32 @@ exports.addMembers = async (req, res) => {
     const validUsernames = newMembersUsernames.filter(username => username !== null)
 
     group.members.push(...newUniqueMembers)
+
+  // Send notifications to the newly added members
+  const notificationPromises = newMembers.map(async newMembers => {
+    const member = await playerModel.findById(newMembers) || await agentModel.findById(newMembers)
+    if (!member) return
+
+    const notification = `${user.userName} added you to "${group.groupName}"`
+    const Notification = {
+      notification,
+      recipient: member._id,
+      recipientModel: member instanceof agentModel ? 'agent' : 'player',
+    }
+
+    // Create and save notification
+    const message = new notificationModel(Notification)
+    await message.save()
+
+    // Add the notification to the member's notifications list
+    member.notifications.push(message._id)
+    await member.save()
+
+    return message
+  })
+
+  await Promise.all(notificationPromises)
+
     await group.save()
 
     res.status(200).json({
@@ -842,7 +868,7 @@ exports.forwardMessage = async (req, res) => {
     await Promise.all(forwardMessages)
 
     res.status(200).json({ 
-      success: `Message forwarded to ${chats.length} chat(s).`
+      success: ` forwarded`
     })
 
   } catch (error) {
@@ -856,15 +882,21 @@ exports.forwardMessage = async (req, res) => {
 exports.editAdmin = async (req, res) => {
   try {
     const id = req.user.userId
-    const {groupId, addToAdmin} = req.body
+    const { groupId, addToAdmin } = req.body
 
     const newAdd = await playerModel.findById(addToAdmin) || await agentModel.findById(addToAdmin)
 
+    if (!newAdd) {
+      return res.status(404).json({
+         error: `user not found` 
+        })
+    }
+
     const group = await chatModel.findById(groupId)
     if (!group) {
-      return res.status(404).json({ 
-        error: "Group not found" 
-      })
+      return res.status(404).json({
+         error: "Group not found" 
+        })
     }
 
     if (!group.admin.includes(id)) {
@@ -875,26 +907,42 @@ exports.editAdmin = async (req, res) => {
 
     if (!group.members.includes(addToAdmin)) {
       return res.status(404).json({ 
-        error: `${addToAdmin} not part of this group`
+        error: `${newAdd.userName} is not part of this group` 
       })
-    }
+  }
 
     if (group.admin.includes(addToAdmin)) {
-      return res.status(400).json({
-         error: "Member is already an admin" 
-        })
-    }
+      return res.status(400).json({ 
+        error: "Member is already an admin for this group chat" 
+      })
+  }
 
     group.admin.push(addToAdmin)
+
+    const notification = `${req.user.userName} added you as an admin in "${group.groupName}"`
+    const Notification = {
+      notification,
+      recipient: newAdd._id,
+      recipientModel: newAdd instanceof agentModel ? 'agent' : 'player',
+    }
+
+    const message = new notificationModel(Notification)
+    await message.save()
+
+    newAdd.notifications.push(message._id)
+    await newAdd.save()
+
+    // Save the updated group
     await group.save()
 
-    res.status(200).json({ 
-      message: `${newAdd.userName} is now an admin`
-     })
-  } catch (error) {
-    res.status(500).json({
-       error: error.message 
+    res.status(200).json({
+       message: `${newAdd.userName} is now an admin` 
       })
+
+  } catch (error) {
+    res.status(500).json({ 
+      error: error.message 
+    })
   }
 }
 
