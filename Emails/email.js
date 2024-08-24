@@ -7,8 +7,8 @@ const sendEmail = async (options) => {
         auth: {
             user: process.env.USER,
             pass: process.env.MAILPASS,
-            secure:false
-        }
+        },
+        secure:false
     })
 
     let mailOptions = {

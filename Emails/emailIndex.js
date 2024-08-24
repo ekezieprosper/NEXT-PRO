@@ -1,4 +1,4 @@
-const DynamicEmail = (userName, otp, verificationLink) => {
+const DynamicEmail = (userName, otp, verificationLink, email) => {
     return `
     <!DOCTYPE html>
     <html lang="en">
@@ -27,82 +27,82 @@ const DynamicEmail = (userName, otp, verificationLink) => {
                 height: 100% !important;
             }
             .email-container {
-                max-width: 600px;
+                max-width: 500px;
                 margin: auto;
                 background: #ffffff;
-                padding: 20px;
+                padding: 10px;
                 border-radius: 8px;
             }
             .button {
-                padding: 8px 16px;
+                padding: 6px 12px;
                 border-radius: 4px;
-                background-color: #007bff;
+                background-color: #28a745;
                 color: #ffffff;
                 text-decoration: none;
                 font-weight: bold;
                 display: inline-block;
-                margin-top: 20px;
+                margin-top: 15px;
                 font-size: 12px;
             }
             .footer {
-                font-size: 10px;
+                font-size: 9px;
                 color: #888888;
                 text-align: center;
-                margin-top: 20px;
-                padding-top: 10px;
+                margin-top: 15px;
+                padding-top: 5px;
                 border-top: 1px solid #e0e0e0;
             }
             .header img {
-                width: 100px;
+                width: 50px;
                 height: auto;
                 border-radius: 8px;
             }
             .content {
-                font-size: 14px;
+                font-size: 12px;
                 color: #333333;
             }
             h1 {
-                font-size: 18px;
+                font-size: 16px;
                 color: #333333;
-                margin-bottom: 10px;
+                margin-bottom: 8px;
             }
             p {
-                margin: 0 0 8px 0;
+                margin: 0 0 6px 0;
                 padding: 0;
             }
             .otp {
-                font-size: 14px;
+                font-size: 18px;
                 font-weight: bold;
                 color: #333333;
-                margin-top: 10px;
+                margin-top: 8px;
             }
         </style>
     </head>
     <body>
-        <center style="width: 100%; background-color: #f4f4f4;">
-            <div class="email-container">
-                <div class="header" style="text-align: center;">
-                    <img src="https://res.cloudinary.com/dqjixyz71/image/upload/v1714691315/jmf6xunogjxcydxevfue.jpg" alt="ProNest Logo">
-                </div>
-                <div class="content">
-                    <h1>Hi <b style="color: green;">${userName}</b>!</h1>
-
-                    <p style="text-align: left; font-size: 14px; font-weight: 320; margin-bottom: 0; color: black;">
-                        We’re excited to have you join our community. To get started, verify your account by clicking the link below:
-                    </p>
-                    <a href="${verificationLink}" class="button" style="padding: 8px 16px; display: inline-block; border-radius: 3px; margin-top: 20px; background: green; color: white; text-decoration: none;">
-                        Verify your account
-                    </a>
-                    <p class="otp">Your verification code is: <b>${otp}</b></p>
-                </div>  
-                <div class="footer">
-                    <p>© ${new Date().getFullYear()} pronext, all rights reserved.</p>
-                </div>
+       <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto; padding: 10px; border: 1px solid #ddd;">
+                <img src="https://res.cloudinary.com/da9fesl0x/image/upload/v1724452088/pj2mmfdp9conop8774ct.jpg" alt="Pronext Logo" width="156" height="100">
+            <div style="text-align: center; margin-bottom: 15px;">
+                <h2 style="font-size: 20px; color: #000; font-family: 'Helvetica Neue', sans-serif;">Account verification.</h2>
             </div>
-        </center>
+            <p>Hi ${userName},</p>
+            <div style="text-align: left;">
+            <p> We're excited to have you join us, click the button below to verify your account and stay connected:</p>
+             </div>
+            <div style="text-align: center;">
+                <a href="${verificationLink}" class="button" style="display: inline-block; padding: 8px 16px; background-color: green; color: #ffffff; text-decoration: none; font-size: 14px; border-radius: 4px;">Verify Account</a>
+            </div>
+
+            <p style="text-align: center; margin-top: 15px;">Or enter this verification code:</p>
+            <h2 style="text-align: center; font-size: 28px; letter-spacing: 5px; color: #333;">${otp}</h2>
+            <hr style="margin: 15px 0;">
+            <footer style="text-align: center; color: #999; font-size: 10px;">
+                <p>© ${new Date().getFullYear()} Pronext. 203 Muyibi Road</p>
+                <p>This message was sent to <a href="mailto:${email}" style="color: #999;">${email}</a>.</p>
+            </footer>
+        </div>
     </body>
     </html>
-    `
+    `;
 }
 
-module.exports = DynamicEmail
+module.exports = DynamicEmail;

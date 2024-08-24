@@ -1,23 +1,23 @@
 const deleteMail = require("../Emails/deleteEmail");
-const sendEmail = require("../Emails/email");
+const sendEmail = require("../Emails/email")
 
-const sendMail = async (agent, player) => {
+const sendMail = async (agent, player, otp) => {
     try {
-        const subject = "Your account has been suspended";
-        const userName = agent ? agent.userName : player.userName;
-        const email = agent ? agent.email : player.email;
-        const text = `Your account has been suspended`
+        const user = agent || player
+        if (!user) throw new Error("No valid user provided")
 
-        const supportTeam = `elitefootball234@gmail.com`;
+        // Prepare email content
+        const subject = `Your account has been suspended`
+        const userName = user.userName
+        const email = user.email
+        const supportTeam = `elitefootball234@gmail.com`
 
-        // Create the HTML content for the email
-        const html = deleteMail(userName, supportTeam);
+        const html = deleteMail(userName, supportTeam, email)
 
-        // Send the email
-        await sendEmail({ email, subject, text, html });
+        await sendEmail({ email, subject, html, text: subject }) 
     } catch (error) {
-        console.log(`Failed to send email to ${agent ? agent.email : player.email}: ${error.message}`);
+        console.error("Error sending OTP:", error.message)
     }
-};
+}
 
-module.exports = sendMail;
+module.exports = sendMail

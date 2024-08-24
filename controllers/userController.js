@@ -206,11 +206,10 @@ exports.resendOTP = async (req, res) => {
         })
 
         // Send the OTP to the user's email
-        const subject = "Email Verification"
-        const text = `Verification code ${otp}`
+        const subject =   `${otp} is your verification code`
         const verificationLink = `https://pronext.onrender.com/verify/${agent?._id||player?._id}`
         const html = resendOtpEmail(user.userName, otp, verificationLink)
-        await sendEmail({ email: user.email, subject, text, html })
+        await sendEmail({ email: user.email, subject, html })
 
         // return success response
         return res.status(200).json({
@@ -423,10 +422,10 @@ exports.forgotPassword = async (req, res) => {
         }, process.env.jwtkey, { expiresIn: "5mins" })
 
         // Send email with OTP and verification link
-        const userName = user.userName
+        const Email = user.email
         const subject = 'Reset Password'
         const verificationLink = `https://pronext.onrender.com/reset_password/${token}`
-        const html = resetFunc(userName, verificationLink)
+        const html = resetFunc(Email, verificationLink)
         await sendEmail({ email: user.email, subject, html })
 
         // Respond with success message

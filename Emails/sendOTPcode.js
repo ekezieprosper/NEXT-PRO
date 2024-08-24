@@ -5,26 +5,27 @@ const bcrypt = require("bcrypt")
 
 const sendOtp = async (agent, player, otp) => {
     try {
-        
-        // Hash OTP then save it to the database
-        const saltotp = bcrypt.genSaltSync(10)
-        const hashotp = bcrypt.hashSync(otp, saltotp)
+        const user = agent || player
+        if (!user) throw new Error("No valid user provided")
+
+        const salt = await bcrypt.genSalt(10)
+        const hashedOtp = await bcrypt.hash(otp, salt)
 
         await OTPModel.create({
             agentId: agent ? agent._id : undefined,
             playerId: player ? player._id : undefined,
-            otp: hashotp
+            otp: hashedOtp,
         })
 
         const subject = `${otp} is your verification code`
-        const userName = agent ? agent.userName : player.userName
-        const email = agent ? agent.email : player.email
-        const text = `${otp} is your verification code`
-        const verificationLink = `https://pronext.onrender.com/verify/${agent?._id||player?._id}`
-        const html = DynamicEmail(userName, otp, verificationLink)
-        await sendEmail({ email, subject, text, html })
+        const userName = user.userName
+        const email = user.email
+        const verificationLink = `https://pronext.onrender.com/verify/${user._id}`
+        const html = DynamicEmail(userName, otp, verificationLink, email)
+
+        await sendEmail({ email, subject, html, text: subject }) 
     } catch (error) {
-        console.log(error.message)
+        console.error("Error sending OTP:", error.message)
     }
 }
 
