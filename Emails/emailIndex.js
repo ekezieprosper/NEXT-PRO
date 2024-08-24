@@ -79,9 +79,9 @@ const DynamicEmail = (userName, otp, verificationLink, email) => {
         </style>
     </head>
     <body>
-       <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto; padding: 10px; border: 1px solid #ddd;">
+       <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto; padding: 10px;">
                 <img src="https://res.cloudinary.com/da9fesl0x/image/upload/v1724452088/pj2mmfdp9conop8774ct.jpg" alt="Pronext Logo" width="156" height="100">
-            <div style="text-align: center; margin-bottom: 15px;">
+                <div style="text-align: center; margin-bottom: 15px;">
                 <h2 style="font-size: 20px; color: #000; font-family: 'Helvetica Neue', sans-serif;">Account verification.</h2>
             </div>
             <p>Hi ${userName},</p>

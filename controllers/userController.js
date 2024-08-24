@@ -407,34 +407,87 @@ exports.forgotPassword = async (req, res) => {
         const { id } = req.params
         const { email } = req.body
 
-        // Find user by email in either agent or player collection
+        // Find user by email and id in either agent or player collection
         const user = await agentModel.findOne({ email, _id: id }) || await playerModel.findOne({ email, _id: id })
         if (!user) {
-            return res.status(404).json({
-                error: 'User not found'
+            return res.status(404).json({ 
+                error: 'User not found' 
             })
         }
 
-        // generate a token for the user
-        const token = jwt.sign({
-            userId: user._id,
-            email: user.email,
-        }, process.env.jwtkey, { expiresIn: "5mins" })
+        // Generate 6-digit OTP
+        const otp = `${Math.floor(Math.random() * 1000000)}`.padStart(6, '0')
+        
+        // hash OTP then save it to the database
+        const salt = await bcrypt.genSalt(10)
+        const hashedOtp = await bcrypt.hash(otp, salt)
+
+        // Determine whether the user is an agent or player based on the model
+        const agent = await agentModel.findById(user._id)
+        const player = await playerModel.findById(user._id)
+
+        await OTPModel.create({
+            agentId: agent ? user._id : undefined,
+            playerId: player ? user._id : undefined,
+            otp: hashedOtp
+        })
 
         // Send email with OTP and verification link
+        const userName = user.userName
         const Email = user.email
-        const subject = 'Reset Password'
-        const verificationLink = `https://pronext.onrender.com/reset_password/${token}`
-        const html = resetFunc(Email, verificationLink)
-        await sendEmail({ email: user.email, subject, html })
+        const subject = `${otp} is your account recovery code`
+        const verificationLink = `https://pronext.onrender.com/reset_password/${user._id}`
 
-        // Respond with success message
-        res.status(200).json({
-            message: 'A mail has been sent to you.'
-        })
+        // Make sure the resetFunc receives all necessary parameters correctly
+        const html = resetFunc(userName, verificationLink, otp, Email)
+        await sendEmail({ email, subject, html })
+
+        return res.redirect(`https://pronext.onrender.com/recover/code/${user._id}`)
     } catch (error) {
-        res.status(500).json({
-            error: error.message
+        return res.status(500).json({ 
+            error: error.message 
+        })
+    }
+}
+
+
+exports.resetCode = async (req, res) => {
+    try {
+        const id = req.params.id
+        const { otp } = req.body
+
+        // Find the user by ID
+        const user = await agentModel.findById(id) || await playerModel.findById(id)
+        if (!user) {
+            return res.status(404).json({ 
+                error: "User not found" 
+            })
+        }
+
+        // Search for the latest OTP record for the user (either agent or player)
+        const otpRecord = await OTPModel.findOne({ $or: [{ agentId: id }, { playerId: id }] }).sort({ createdAt: -1 })
+        if (!otpRecord) {
+            return res.status(404).json({
+                 error: "OTP has expired" 
+            })
+        }
+
+        // Compare the OTP from the request with the saved OTP
+        const isMatch = await bcrypt.compare(otp, otpRecord.otp)
+        if (!isMatch) {
+            return res.status(400).json({ 
+                error: "Invalid OTP" 
+            })
+        }
+
+        // Delete the OTP record after successful verification
+        await OTPModel.findByIdAndDelete(otpRecord._id)
+
+        // Redirect the user to the reset password page
+        return res.redirect(`https://pronext.onrender.com/reset_password/${user._id}`)
+    } catch (error) {
+        return res.status(500).json({
+             error: error.message 
         })
     }
 }
