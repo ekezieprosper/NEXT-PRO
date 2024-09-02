@@ -7,6 +7,7 @@ const {
 const upload = require("../media/multer")
 const uploader = require("../media/multerFiles")
 const authenticate = require("../auth/authenticate")
+const voiceNote = require("../media/voiceNotes")
 
 router.post('/start_chat',authenticate, startChat)
 router.post('/group', authenticate, createGroupChat)
@@ -14,7 +15,7 @@ router.post('/group_image', authenticate, upload.single("groupImage"), createGro
 router.delete('/groupImg/:groupId', authenticate, deleteGroupImg)
 router.get('/direct/inbox', authenticate, getChat)
 router.post('/chat/message', authenticate, uploader.array("media", 30), sendMessage)
-router.post('/chat/voice', authenticate, upload.single("voice"), sendVoiceNote)
+router.post('/chat/voice', authenticate, voiceNote.single("voice"), sendVoiceNote)
 router.put('/edit_text', authenticate, editMessage)
 router.post('/copy', authenticate, copyMessage)
 router.post('/react', authenticate, reactOnChat)

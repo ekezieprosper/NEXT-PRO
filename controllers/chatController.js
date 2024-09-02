@@ -5,7 +5,6 @@ const agentModel = require("../models/agentModel")
 const notificationModel = require("../models/notificationModel")
 const cloudinary = require("../media/cloudinary")
 const emoji = require('node-emoji')
-const streamifier = require('streamifier')
 const fs = require("fs")
 
 
@@ -353,70 +352,72 @@ exports.sendMessage = async (req, res) => {
 
 exports.sendVoiceNote = async (req, res) => {
   try {
-    const id = req.user.userId
+    const userId = req.user.userId
     const { chatId } = req.body
 
-// Check if the user is a member in the chat
-if (!chat.members.includes(id) ) {
-  return res.status(400).json({
-    error: `not a member`
-  })
-}
+    const chat = await chatModel.findById(chatId)
 
-if (chat.block.includes(chatId)) {
-  return res.status(400).json({
-    error:  `This chat is blocked by ${chat.blockedBy}.You can't send message`
-  })
-}
+    if (!chat) {
+      return res.status(404).json({ 
+        error: 'Chat not found' 
+      })
+    }
 
-    if (!req.file || !req.file.buffer) {
+    // Check if the user is a member of the chat
+    if (!chat.members.includes(userId)) {
       return res.status(400).json({
-        error: "Voice note file is required."
+        error: 'You are not a member of this chat',
       })
     }
 
-    const fileName = `${id}-${Date.now()}.mp3`
-
-    const streamUpload = (buffer) => {
-      return new Promise((resolve, reject) => {
-        let stream = cloudinary.uploader.upload_stream({ 
-          resource_type: 'video',
-           public_id: fileName,
-            folder: 'voice_notes' 
-          },
-          
-          (error, result) => {
-            if (result) {
-              resolve(result)
-            } else {
-              reject(error)
-            }
-          }
-        )
-        streamifier.createReadStream(buffer).pipe(stream)
+    // Check if the chat is blocked
+    if (chat.block.includes(userId)) {
+      return res.status(400).json({
+        error: `This chat is blocked by ${chat.blockedBy}. You can't send messages.`,
       })
     }
 
-    const result = await streamUpload(req.file.buffer)
+    // Check if a file was uploaded
+    if (!req.file) {
+      return res.status(400).json({
+         error: 'No file uploaded'
+         })
+    }
 
+    // Upload the voice note to Cloudinary
+    const result = await cloudinary.uploader.upload(req.file.path, {
+      resource_type: 'auto',
+    })
+
+      // Delete the file from local storage
+      fs.unlink(req.file.path, (err) => {
+        if (err) {
+            console.error('Failed to delete local file', err)
+        }
+    })
+
+    // Save file URL to the message
     const message = new messageModel({
       chatId,
-      sender: id,
+      sender: userId,
       voice: result.secure_url
     })
+
     await message.save()
 
-    res.status(200).json({
-      voiceNote: message.voice,
-      time: message.time
-    })
-
+    // Add the message to the chat
     chat.chats.push(message._id)
-      await chat.save()
+    await chat.save()
 
+    res.status(200).json({
+      id: message._id,
+      from: message.sender,
+      voiceNote: message.voice,
+      time: message.time,
+    })
   } catch (error) {
     res.status(500).json({
-      error: error.message
+      error: error.message,
     })
   }
 }
@@ -706,10 +707,10 @@ exports.deleteMessage = async (req, res) => {
       // Delete media from Cloudinary if it exists
       if (message.media && message.media.length > 0) {
         await Promise.all(message.media.map(async (mediaUrl) => {
-          const publicId = mediaUrl.split("/").pop().split(".")[0];
+          const publicId = mediaUrl.split("/").pop().split(".")[0]
           // Determine the resource type (image or video)
-          const resourceType = mediaUrl.includes('.mp4') || mediaUrl.includes('.avi') ? 'video' : 'image';
-          await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
+          const resourceType = mediaUrl.includes('.mp4') || mediaUrl.includes('.avi') ? 'video' : 'image'
+          await cloudinary.uploader.destroy(publicId, { resource_type: resourceType })
         }))  
       }
       

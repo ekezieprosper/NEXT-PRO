@@ -1,5 +1,5 @@
 const socketIO = require('socket.io')
-const chatModel = require("../models/chatModel")
+const chatModel = require('../models/chatModel')
 const { RTCPeerConnection, RTCSessionDescription, RTCIceCandidate } = require('wrtc')
 
 class Calls {
@@ -40,6 +40,7 @@ class Calls {
       await peerConnection.setRemoteDescription(new RTCSessionDescription(offer))
       const answer = await peerConnection.createAnswer()
       await peerConnection.setLocalDescription(answer)
+
       socket.emit('answer', { answer: peerConnection.localDescription })
     } catch (error) {
       console.error('Error handling offer:', error)
@@ -82,20 +83,36 @@ class Calls {
   }
 
   handleTrack(socket, chatId, stream) {
-    if (this.isGroupChat(chatId)) {
-      this.io.emit('remoteStream', { id: socket.id, stream })
-    } else {
-      this.getUserSocketId(chatId).then(targetSocketId => {
-        if (targetSocketId) {
-          this.io.to(targetSocketId).emit('remoteStream', { id: socket.id, stream })
+    this.isGroupChat(chatId)
+      .then((isGroup) => {
+        if (isGroup) {
+          this.getGroupMembers(chatId).then((members) => {
+            members.forEach((memberId) => {
+              const memberSocket = this.getSocketById(memberId)
+              if (memberSocket) {
+                memberSocket.emit('remoteStream', { id: socket.id, stream })
+              }
+            })
+          })
         } else {
-          socket.emit('error', { error: 'User not found in chat' })
+          this.getUserSocketId(chatId)
+            .then((targetSocketId) => {
+              if (targetSocketId) {
+                this.io.to(targetSocketId).emit('remoteStream', { id: socket.id, stream })
+              } else {
+                socket.emit('error', { error: 'User not found in chat' })
+              }
+            })
+            .catch((error) => {
+              console.error('Error getting user socket ID:', error)
+              socket.emit('error', { error: 'Failed to get user socket ID' })
+            })
         }
-      }).catch(error => {
-        console.error('Error getting user socket ID:', error)
-        socket.emit('error', { error: 'Failed to get user socket ID' })
       })
-    }
+      .catch((error) => {
+        console.error('Error checking if group chat:', error)
+        socket.emit('error', { error: 'Failed to determine chat type' })
+      })
   }
 
   handleDisconnect(socket) {
@@ -103,6 +120,7 @@ class Calls {
     if (peerConnection) {
       peerConnection.close()
       this.peerConnections.delete(socket.id)
+      this.io.emit('userDisconnected', { socketId: socket.id })
     }
   }
 
@@ -121,6 +139,16 @@ class Calls {
     }
   }
 
+  async getGroupMembers(chatId) {
+    try {
+      const groupChat = await chatModel.findById(chatId)
+      return groupChat.members.map(member => member.socketId)
+    } catch (error) {
+      console.error('Error getting group members:', error)
+      throw new Error('Failed to get group members')
+    }
+  }
+
   async getUserSocketId(chatId) {
     try {
       const personalChat = await chatModel.findById(chatId)
@@ -129,6 +157,10 @@ class Calls {
       console.error('Error getting user socket ID:', error)
       throw new Error('Failed to get user socket ID')
     }
+  }
+
+  getSocketById(socketId) {
+    return this.io.sockets.sockets.get(socketId)
   }
 }
 

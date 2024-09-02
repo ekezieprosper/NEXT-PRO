@@ -10,15 +10,14 @@ const storage = multer.diskStorage({
 })
 
 const fileFilter = (req, file, cb) => {
-    if (file.mimetype.startsWith("image/") || file.mimetype.startsWith('audio/')) {
+    if (file.mimetype.startsWith("image/")) {
         cb(null, true)
     } else {
-        cb(new Error("Filetype not supported. Only images or audio files are allowed."), false)
+        cb(new Error("Filetype not supported. Only images files are allowed."), false)
     }
 }
 
 const image_file_size = 1024 * 1024 * 10 
-const audio_file_size = 20 * 1024 * 1024 
 
 const maxcount = 1
 
@@ -30,7 +29,5 @@ const upload = multer({
         files: maxcount 
     }
 })
-
-upload.audioFileSize = audio_file_size
 
 module.exports = upload

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebRTC Call App</title>
+    <style>
+      body {
+        font-family: 'Arial', sans-serif;
+        background-color: #f0f2f5;
+        color: #333;
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+
+      h2 {
+        color: #2c3e50;
+        margin-bottom: 10px;
+      }
+
+      .videos {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+        margin-bottom: 20px;
+      }
+
+      video {
+        width: 100%;
+        max-width: 500px;
+        background-color: #ddd;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .controls {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+      }
+
+      input, button {
+        padding: 10px;
+        font-size: 16px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+        width: 100%;
+        max-width: 300px;
+        box-sizing: border-box;
+      }
+
+      button {
+        background-color: #3498db;
+        color: white;
+        border: none;
+        cursor: pointer;
+        transition: background-color 0.3s;
+      }
+
+      button:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+      }
+
+      button:hover:not(:disabled) {
+        background-color: #2980b9;
+      }
+
+      input {
+        text-align: center;
+      }
+
+      footer {
+        margin-top: 20px;
+        font-size: 14px;
+        color: #999;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>WebRTC Call App</h2>
+    
+    <div class="videos">
+      <div>
+        <h3>Local Stream</h3>
+        <video id="webcamVideo" autoplay playsinline></video>
+      </div>
+      <div>
+        <h3>Remote Stream</h3>
+        <video id="remoteVideo" autoplay playsinline></video>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="webcamButton">Start Webcam</button>
+
+      <h2>2. Create or Join a Call</h2>
+
+      <button id="callButton" disabled>Create Call (Offer)</button>
+
+      <input id="callInput" placeholder="Enter Call ID to Join" />
+      <button id="answerButton" disabled>Join Call</button>
+
+      <h2>4. Hangup</h2>
+      <button id="hangupButton" disabled>Hangup</button>
+    </div>
+
+
+    <!-- script for webrtc -->
+    <script type="module" src="/calls.js"></script>
+  </body>
+</html>
