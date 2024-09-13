@@ -3,7 +3,8 @@ const router = require("express").Router()
 const { signupAgent, logIn, verify, logOut, deleteProfileImg, getAllFollowers, getOneFollower, createProfileImg,changePassword, 
 updateUserName, getUsers, deleteAccount, updateUserProfile, resendOTP, follow, unfollow,resetPassword, updateEmail, forgotPassword,
 signupPlayer, home, getAllFollowing, getOneFollowing,
-resetCode} = require("../controllers/userController")
+resetCode,
+resendRecoveryCode} = require("../controllers/userController")
 
 const {signUp, updateValidation, forgotValidation,changePasswordValidation, resetPasswordValidation} = require("../validation/validation")
 const upload = require("../media/multer")
@@ -17,6 +18,7 @@ router.post('/verify/:id', verify)
 router.post("/logIn", logIn)
 router.post("/logout", authenticate, logOut)
 router.post('/forgot_password/:id',forgotValidation, forgotPassword)
+router.post('/resend_recoveryCode/:id', resendRecoveryCode)
 router.post('/recover/code/:id', resetCode)
 router.post('/reset_password/:id',resetPasswordValidation, resetPassword)
 router.put('/change_password', authenticate, changePasswordValidation, changePassword)

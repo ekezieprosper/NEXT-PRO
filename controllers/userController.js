@@ -250,7 +250,7 @@ exports.resendOTP = async (req, res) => {
         })
 
         // Send the OTP to the user's email
-        const subject =   `${otp} is your verification code`
+        const subject =`${otp} is your verification code`
         const verificationLink = `https://pronext.onrender.com/verify/${agent?._id||player?._id}`
         const html = resendOtpEmail(user.userName, otp, verificationLink)
         await sendEmail({ email: user.email, subject, html })
@@ -490,6 +490,53 @@ exports.forgotPassword = async (req, res) => {
     } catch (error) {
         return res.status(500).json({ 
             error: error.message 
+        })
+    }
+}
+
+
+exports.resendRecoveryCode = async (req, res) => {
+    try {
+        const id = req.params.id
+
+        const agent = await agentModel.findById(id)
+        const player = await playerModel.findById(id)
+        const user = player || agent
+        if (!user) {
+            return res.status(404).json({
+                error: "User not found."
+            })
+        }
+
+        // Generate 6-digit OTP
+        const otp = `${Math.floor(Math.random() * 1000000)}`.padStart(6, '0')
+
+        // hash OTP then save it to the database
+        const saltotp = bcrypt.genSaltSync(10)
+        const hashotp = bcrypt.hashSync(otp, saltotp)
+
+        // Save the hashed OTP in the OTPModel for verification
+        await OTPModel.create({
+            agentId: agent ? agent._id : undefined,
+            playerId: player ? player._id : undefined,
+            otp: hashotp
+        })
+
+        // Send the OTP to the user's email
+        const userName = user.userName
+        const subject =`${otp} is your account recovery code`
+        const Email = user.email
+        const verificationLink = `https://pronext.onrender.com/reset_password/${agent?._id||player?._id}`
+        const html = resetFunc(userName, verificationLink, otp, Email)
+        await sendEmail({ email: user.email, subject, html })
+
+        // return success response
+        return res.status(200).json({
+            message: "check your email address"
+        })
+    } catch (error) {
+        res.status(500).json({
+            error: error.message
         })
     }
 }
