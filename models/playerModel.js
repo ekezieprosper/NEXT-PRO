@@ -119,6 +119,10 @@ const playerSchema = new mongoose.Schema({
         ref: 'notification'
     }],
 
+    emailCount: { 
+        type: Number, default: 0 
+    },
+
     createdOn: {
         type: String,
         default: createdOn

@@ -4,10 +4,10 @@ const time = new Date().toLocaleString('en-NG', {
     hour: '2-digit', 
     minute: '2-digit', 
     hourCycle: 'h12' 
-  });
+  })
   
-  const [hour, minute, period] = time.split(/[:\s]/);
-  const createdOn = `${hour}:${minute} ${period}`;
+  const [hour, minute, period] = time.split(/[:\s]/)
+  const createdOn = `${hour}:${minute} ${period}`
 
 
 const messageSchema = new mongoose.Schema({

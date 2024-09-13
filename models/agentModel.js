@@ -84,6 +84,10 @@ const agentSchema = new mongoose.Schema({
         ref: 'player'
     }],
 
+    emailCount: { 
+        type: Number, default: 0 
+    },
+
     following: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'player'

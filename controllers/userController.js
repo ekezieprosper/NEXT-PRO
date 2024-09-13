@@ -30,7 +30,7 @@ exports.signupPlayer = async (req, res) => {
                 error: 'country is required.'
             })
         }
-
+          
          // Check if position and subPosition are provided
          if (!position || !subPosition) {
             return res.status(400).json({
@@ -52,13 +52,34 @@ exports.signupPlayer = async (req, res) => {
             })
         }
 
-        // Check if the email already exists in the agent database
-        const Email = await agentModel.findOne({ email })
-        if (Email) {
+        const existingEmail = await agentModel.findOne({ email });
+        if (existingEmail) {
+            let maskedEmail;
+            if (email.length > 10) {
+                // Mask the email by keeping the first part and replacing the last part with asterisks
+                const Email = email.slice(-12);
+                maskedEmail = `*****${Email}`;
+            } else {
+                // If the email is 10 characters or fewer, just mask it completely
+                maskedEmail = '*****';
+            }
             return res.status(403).json({
-                error: `${email} can not be used for signup as a player`
-            })
+                error: `"${maskedEmail}" can't be use to regiser a player account.`
+            });
         }
+
+        const maxEmailUsage = await playerModel.findOne({email})
+        if (maxEmailUsage) {
+            if (maxEmailUsage.emailCount >= 3) {
+              return res.status(400).json({ 
+                message: 'This email has been used multiple times' 
+            })
+            }
+            
+            // Increment email usage count and save
+            maxEmailUsage.emailCount += 1
+            await maxEmailUsage.save()
+          }
 
         // Check if user already exists in the database
         const searchUsername = await agentModel.findOne({userName}) || await playerModel.findOne({userName})
@@ -82,6 +103,7 @@ exports.signupPlayer = async (req, res) => {
             position,
             subPosition,
             email: email.toLowerCase(),
+            emailCount: 1
         })
 
         // Error message if player was unable to register
@@ -123,12 +145,33 @@ exports.signupAgent = async (req, res) => {
         }
 
         // Check if the email exists in the player's database
-        const Email = await playerModel.findOne({ email })
-        if (Email) {
+        const existingEmail = await playerModel.findOne({ email });
+        if (existingEmail) {
+            let maskedEmail;
+            if (email.length > 10) {
+                const Email = email.slice(-12);
+                maskedEmail = `*****${Email}`;
+            } else {
+
+                maskedEmail = '*****';
+            }
             return res.status(403).json({
-                error: `${email} can not be used for signup as an agent`
-            })
+                error: `"${maskedEmail}" can't be use to regiser an agent account.`
+            });
         }
+
+        const maxEmailUsage = await agentModel.findOne({email})
+        if (maxEmailUsage) {
+            if (maxEmailUsage.emailCount >= 3) {
+              return res.status(400).json({ 
+                message: 'This email has been used multiple times' 
+            })
+            }
+            
+            // Increment email usage count and save
+            maxEmailUsage.emailCount += 1
+            await maxEmailUsage.save()
+          }
 
         // check if user already exists in the database
         const searchUsername = await agentModel.findOne({ userName }) || await playerModel.findOne({ userName })
@@ -150,6 +193,7 @@ exports.signupAgent = async (req, res) => {
             password: hashpass,
             gender,
             email: email.toLowerCase(),
+            emailCount: 1
         })
 
         if (!agent) {
@@ -703,7 +747,7 @@ exports.updateUserProfile = async (req, res) => {
                 })
             }
 
-            const fullPhoneNumber = `${countryCode} ${phoneNumber}`
+            const fullPhoneNumber = `${countryCode}${phoneNumber}`
 
             const validNumber = parsePhoneNumber(fullPhoneNumber)
             if (!validNumber.isValid()) {
