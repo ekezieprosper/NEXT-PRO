@@ -16,7 +16,7 @@ const notificationRouter = require("./routers/notificationRouter")
 require("./config/config")
 require("dotenv").config()
 
-const port = process.env.port || 1999
+const port = process.env.port
 const app = express()
 const server = http.createServer(app)
 
