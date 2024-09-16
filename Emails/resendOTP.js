@@ -89,7 +89,7 @@ const resendOtpEmail = (userName, otp, verificationLink, email) => {
                 <a href="${verificationLink}" class="button" style="display: inline-block; padding: 8px 16px; background-color: green; color: #ffffff; text-decoration: none; font-size: 14px; border-radius: 4px;">Verify Account</a>
             </div>
 
-            <p style="text-align: center; margin-top: 15px;">Or enter this verification code:</p>
+            <p style="text-align: center; margin-top: 15px;">Or enter this verification code. Expires in <b>5 minutes</b>.</p>
             <h2 style="text-align: center; font-size: 28px; letter-spacing: 5px; color: #333;">${otp}</h2>
             <hr style="margin: 15px 0;">
             <footer style="text-align: center; color: #999; font-size: 10px;">

@@ -82,7 +82,7 @@ const resetFunc = (userName, verificationLink, otp, Email) => {
             </div>
             <div style="text-align: left;">
             <p>We received a request to reset the password for your account <b>${userName}.</b></p>
-            <p>Enter this opt code, do not share.</p>
+            <p>Enter this opt code, do not share. This code will expire in <b>5 minutes</b>.</p>
              </div>
              <h2 style="text-align: left; font-size: 28px; letter-spacing: 5px; color: #333;">${otp}</h2>
              <p style="text-align: left; margin-top: 15px;">Alternatively, you can directly reset your password</p>
