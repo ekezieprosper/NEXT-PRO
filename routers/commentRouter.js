@@ -1,6 +1,12 @@
 const router = require('express').Router()
 
-const { newComment, getOnePostComment, getAllPostComment, deleteCommentOnPost, editComment } = require("../controllers/commentController")
+const { 
+    newComment, 
+    getOnePostComment, 
+    getAllPostComment, 
+    deleteCommentOnPost, 
+    editComment } = require("../controllers/commentController")
+    
 const authenticate = require("../auth/authenticate")
 
 

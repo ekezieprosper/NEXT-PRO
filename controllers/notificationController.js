@@ -31,11 +31,10 @@ exports.getAllNotifications = async (req, res) => {
         res.status(200).json(notifications)
     } catch (error) {
         res.status(500).json({
-             message: error.message 
+             message: 'Internal server error' 
         })
     }
 }
-
 
 
 exports.getNotificationById = async (req, res) => {
@@ -67,11 +66,10 @@ exports.getNotificationById = async (req, res) => {
         })
     } catch (error) {
         res.status(500).json({
-            message: error.message
+            message: 'Internal server error'
         })
     }
 }
-
 
 
 exports.deleteNotification = async (req, res) => {
@@ -117,7 +115,7 @@ exports.deleteNotification = async (req, res) => {
 
     } catch (error) {
         return res.status(500).json({
-             message: error.message 
+             message: 'Internal server error' 
             })
     }
 }

@@ -75,7 +75,7 @@ exports.newComment = async (req, res) => {
     })
   } catch (error) {
     res.status(500).json({
-       error: error.message
+       error: 'Internal server error'
       })
   }
 }
@@ -114,7 +114,7 @@ exports.getOnePostComment = async (req, res) => {
     })
   } catch (error) {
     res.status(500).json({
-      error: error.message
+      error: 'Internal server error'
     })
   }
 }
@@ -155,7 +155,7 @@ exports.getAllPostComment = async (req, res) => {
     res.status(200).json(commentsData)
   } catch (error) {
     res.status(500).json({
-      error: error.message
+      error: 'Internal server error'
     })
   }
 }
@@ -203,7 +203,7 @@ exports.editComment = async (req, res) => {
 
   } catch (error) {
     res.status(500).json({
-      error: error.message
+      error: 'Internal server error'
     })
   }
 }
@@ -249,7 +249,7 @@ exports.deleteCommentOnPost = async (req, res) => {
     })
   } catch (error) {
     res.status(500).json({
-      error: error.message
+      error: 'Internal server error'
     })
   }
 }

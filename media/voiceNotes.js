@@ -20,7 +20,7 @@ const fileFilter = (req, file, cb) => {
   }
 }
 
-const audio_file_size = 10 * 1024 * 1024
+const audio_file_size = 1024 * 1024 * 10
 const maxcount = 1
 
 const voiceNote = multer({

@@ -1,5 +1,13 @@
 const router = require("express").Router()
-const { createstory, getstory, getAllStories, likestory, unlikestory, deletestory, replyStory } = require("../controllers/storyController")
+const { 
+    createstory, 
+    getstory, 
+    getAllStories, 
+    likestory, 
+    unlikestory, 
+    deletestory, 
+    replyStory } = require("../controllers/storyController")
+    
 const uploader = require("../media/multerFiles")
 const authenticate = require("../auth/authenticate")
 

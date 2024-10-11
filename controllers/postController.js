@@ -91,11 +91,10 @@ exports.createPost = async (req, res) => {
 
     } catch (error) {
         res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }
-
 
 
 exports.getPost = async (req, res) => {
@@ -128,7 +127,7 @@ exports.getPost = async (req, res) => {
 
     } catch (error) {
         res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }
@@ -155,7 +154,7 @@ exports.getAllPosts = async (req, res) => {
 
     } catch (error) {
         res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }
@@ -201,7 +200,7 @@ exports.getPostByDescription = async (req, res) => {
 
     } catch (error) {
         res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }
@@ -275,7 +274,7 @@ exports.likePost = async (req, res) => {
         })
     } catch (error) {
         res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }
@@ -324,7 +323,7 @@ exports.unlikePost = async (req, res) => {
         })
     } catch (error) {
         res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }
@@ -369,7 +368,7 @@ exports.deletePost = async (req, res) => {
         })
     } catch (error) {
         res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }

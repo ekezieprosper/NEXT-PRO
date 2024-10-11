@@ -1,7 +1,7 @@
 const deleteMail = require("../Emails/deleteEmail");
 const sendEmail = require("../Emails/email")
 
-const sendMail = async (agent, player, otp) => {
+const sendMail = async (agent, player) => {
     try {
         const user = agent || player
         if (!user) throw new Error("No valid user provided")
@@ -16,7 +16,7 @@ const sendMail = async (agent, player, otp) => {
 
         await sendEmail({ email, subject, html, text: subject }) 
     } catch (error) {
-        console.error("Error sending OTP:", error.message)
+        console.error("Error sending mail:", error.message)
     }
 }
 

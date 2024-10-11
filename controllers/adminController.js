@@ -86,7 +86,7 @@ exports.signUp = async (req, res) => {
 
     } catch (error) {
         return res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }
@@ -95,6 +95,7 @@ exports.signUp = async (req, res) => {
 exports.ProfileImgage = async (req, res) => {
     try {
         const id = req.admin.adminId
+
         // Check if user exists in agentModel or playerModel
         const admin = await adminModel.findById(id)
         if (!admin) {
@@ -132,10 +133,11 @@ exports.ProfileImgage = async (req, res) => {
 
     } catch (error) {
         return res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }
+
 
 exports.getAllUsers = async (req, res) => {
     try {
@@ -163,7 +165,7 @@ exports.getAllUsers = async (req, res) => {
         }
     } catch (error) {
         return res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }
@@ -207,7 +209,7 @@ exports.suspendUser = async (req, res) => {
 
     } catch (error) {
         return res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }
@@ -234,7 +236,7 @@ exports.getAllSuspendedUsers = async (req, res) => {
         }
     } catch (error) {
         return res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }
@@ -266,12 +268,13 @@ exports.unSuspendUser = async (req, res) => {
 
         await admin.save()
 
-        // Redirect the user to the login page
-        return res.redirect('https://pronext.onrender.com/logIn')
+        return res.status(200).json({
+            message: "Unsuspended"
+     })
 
     } catch (error) {
         return res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }
@@ -314,7 +317,7 @@ exports.deleteUser = async (req, res) => {
         })
     } catch (error) {
         return res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }

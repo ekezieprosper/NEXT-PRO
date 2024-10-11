@@ -1,12 +1,39 @@
 const router = require("express").Router()
 
-const { signupAgent, logIn, verify, logOut, deleteProfileImg, getAllFollowers, getOneFollower, createProfileImg,changePassword, 
-updateUserName, getUsers, deleteAccount, updateUserProfile, resendOTP, follow, unfollow,resetPassword, updateEmail, forgotPassword,
-signupPlayer, home, getAllFollowing, getOneFollowing,
-resetCode,
-resendRecoveryCode} = require("../controllers/userController")
+const { 
+    home, 
+    signupPlayer, 
+    signupAgent, 
+    logIn, 
+    verify, 
+    logOut, 
+    deleteProfileImg, 
+    getAllFollowers, 
+    getOneFollower, 
+    createProfileImg,
+    changePassword, 
+    updateUserName, 
+    getUsers, 
+    deleteAccount, 
+    updateUserProfile, 
+    resendOTP, 
+    follow, 
+    unfollow,
+    resetPassword, 
+    updateEmail, 
+    forgotPassword,
+    getAllFollowing, 
+    getOneFollowing,
+    resetCode,
+    resendRecoveryCode} = require("../controllers/userController")
 
-const {signUp, updateValidation, forgotValidation,changePasswordValidation, resetPasswordValidation} = require("../validation/validation")
+const {
+    signUp, 
+    updateValidation, 
+    forgotValidation,
+    changePasswordValidation, 
+    resetPasswordValidation} = require("../validation/validation")
+    
 const upload = require("../media/multer")
 const authenticate = require("../auth/authenticate")
 

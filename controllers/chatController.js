@@ -35,7 +35,7 @@ exports.startChat = async (req, res) => {
 
     if (!newChat) {
       return res.status(400).json({
-        error: error.message
+        error: 'Internal server error'
       })
     }
 
@@ -47,7 +47,7 @@ exports.startChat = async (req, res) => {
 
   } catch (error) {
     res.status(500).json({
-      error: error.message
+      error: 'Internal server error'
     })
   }
 }
@@ -132,7 +132,7 @@ exports.createGroupChat = async (req, res) => {
 
   } catch (error) {
     res.status(500).json({
-       error: error.message 
+       error: 'Internal server error' 
       })
   }
 }
@@ -197,7 +197,7 @@ exports.createGroupImage = async (req, res) => {
       })
   } catch (error) {
     res.status(500).json({ 
-      error: error.message 
+      error: 'Internal server error' 
     })
   }
 }
@@ -237,7 +237,7 @@ exports.deleteGroupImg = async (req, res) => {
       res.status(200).json(group.groupImage)
   } catch (error) {
       res.status(500).json({
-          error: error.message
+          error: 'Internal server error'
       })
   }
 }
@@ -251,7 +251,7 @@ exports.getChat = async (req, res) => {
     res.status(200).json(chats)
   } catch (error) {
     res.status(500).json({
-       error: error.message 
+       error: 'Internal server error' 
       })
   }
 }
@@ -344,7 +344,7 @@ exports.sendMessage = async (req, res) => {
 
   } catch (error) {
     res.status(500).json({ 
-      error: error.message 
+      error: 'Internal server error' 
     })
   }
 }
@@ -417,7 +417,7 @@ exports.sendVoiceNote = async (req, res) => {
     })
   } catch (error) {
     res.status(500).json({
-      error: error.message,
+      error: 'Internal server error',
     })
   }
 }
@@ -450,7 +450,7 @@ exports.editMessage = async (req, res) => {
        })
   } catch (error) {
     res.status(500).json({ 
-      error: error.message
+      error: 'Internal server error'
      })
   }
 }
@@ -475,7 +475,7 @@ exports.copyMessage = async (req, res) => {
       })
   } catch (error) {
     res.status(500).json({
-       error: error.message 
+       error: 'Internal server error' 
       })
   }
 }
@@ -516,7 +516,7 @@ exports.reactOnChat = async (req, res) => {
 
   } catch (error) {
     res.status(500).json({ 
-      error: error.message
+      error: 'Internal server error'
      })
   }
 }
@@ -552,7 +552,7 @@ exports.getChatmessage = async (req, res) => {
 
   } catch (error) {
     res.status(500).json({ 
-      error: error.message 
+      error: 'Internal server error' 
     })
   }
 }
@@ -602,7 +602,7 @@ exports.blockChat = async (req, res) => {
 
   } catch (error) {
     return res.status(500).json({
-      error: error.message
+      error: 'Internal server error'
     })
   }
 }
@@ -661,7 +661,7 @@ exports.unblockChat = async (req, res) => {
 
   } catch (error) {
     return res.status(500).json({
-      error: error.message
+      error: 'Internal server error'
     })
   }
 }
@@ -727,7 +727,7 @@ exports.deleteMessage = async (req, res) => {
 
   } catch (error) {
     res.status(500).json({
-      error: error.message
+      error: 'Internal server error'
     })
   }
 }
@@ -811,7 +811,7 @@ exports.addMembers = async (req, res) => {
     })
   } catch (error) {
     res.status(500).json({
-      error: error.message
+      error: 'Internal server error'
     })
   }
 }
@@ -874,7 +874,7 @@ exports.forwardMessage = async (req, res) => {
 
   } catch (error) {
     return res.status(500).json({
-       error: error.message 
+       error: 'Internal server error' 
     })
   }
 }
@@ -942,7 +942,7 @@ exports.editAdmin = async (req, res) => {
 
   } catch (error) {
     res.status(500).json({ 
-      error: error.message 
+      error: 'Internal server error' 
     })
   }
 }
@@ -1016,7 +1016,7 @@ exports.removeMembers = async (req, res) => {
 
   } catch (error) {
     res.status(500).json({
-      error: error.message
+      error: 'Internal server error'
     })
   }
 }
@@ -1083,7 +1083,7 @@ exports.exitGroup = async (req, res) => {
 
   } catch (error) {
     res.status(500).json({
-      error: error.message
+      error: 'Internal server error'
     })
   }
 }
@@ -1130,7 +1130,7 @@ exports.deleteChat = async (req, res) => {
     })
   } catch (error) {
     res.status(500).json({ 
-      error: error.message
+      error: 'Internal server error'
      })
   }
 }

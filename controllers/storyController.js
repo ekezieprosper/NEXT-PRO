@@ -92,11 +92,10 @@ exports.createstory = async (req, res) => {
 
     } catch (error) {
         res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }
-
 
 
 exports.getstory = async (req, res) => {
@@ -136,7 +135,7 @@ exports.getstory = async (req, res) => {
 
     } catch (error) {
         res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }
@@ -164,7 +163,7 @@ exports.getAllStories = async (req, res) => {
 
     } catch (error) {
         res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }
@@ -248,7 +247,7 @@ exports.replyStory = async (req, res) => {
 
     } catch (error) {
         res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }
@@ -320,7 +319,7 @@ exports.likestory = async (req, res) => {
         })
     } catch (error) {
          res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }
@@ -373,7 +372,7 @@ exports.unlikestory = async (req, res) => {
         })
     } catch (error) {
         res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }
@@ -382,6 +381,7 @@ exports.unlikestory = async (req, res) => {
 exports.deletestory = async (req, res) => {
     try {
         const id = req.user.userId
+        const storyId = req.params.storyId
 
         if (!id) {
             return res.status(401).json({
@@ -389,45 +389,36 @@ exports.deletestory = async (req, res) => {
             })
         }
 
-        const storyId = req.params.storyId
-
-        // Find the story by its ID
         const story = await storyModel.findById(storyId)
-
-        // If story is not found, return 404 error
         if (!story) {
             return res.status(404).json({
                 error: "Story not found."
             })
         }
 
-        // Check if the user is the owner of the story
         if (story.owner.toString() !== id) {
             return res.status(403).json({
                 error: "Unauthorized."
             })
         }
 
-             // Delete media from Cloudinary if it exists
-     if (story.story && story.story.length > 0) {
-        await Promise.all(story.story.map(async (storyUrl) => {
-            const publicId = storyUrl.split("/").pop().split(".")[0]
-            // Determine the resource type (image or video)
-            const resourceType = storyUrl.includes('.mp4') || storyUrl.includes('.avi') ? 'video' : 'image'
-            await cloudinary.uploader.destroy(publicId, { resource_type: resourceType })
-          }))      
-      }
-
-        // Delete the story
+        // Delete media from Cloudinary if it exists
+        if (story.story && story.story.length > 0) {
+            await Promise.all(story.story.map(async (storyUrl) => {
+                const publicId = storyUrl.split("/").pop().split(".")[0]
+                // Determine the resource type (video or image)
+                const resourceType = storyUrl.includes('.mp4') || storyUrl.includes('.avi') ? 'video' : 'image'
+                await cloudinary.uploader.destroy(publicId, { resource_type: resourceType })
+            }))
+        }
         await storyModel.findByIdAndDelete(storyId)
 
-        // Return success message
         res.status(200).json({
             message: "Story deleted successfully."
         })
     } catch (error) {
         res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }

@@ -16,7 +16,7 @@ const resendOtpEmail = require("../Emails/resendOTP")
 
 
 exports.home = (req, res) => {
-    res.send("<h1>....Connecting players to the real world of football.</h1>")
+    res.send("....Connecting players to the real world of football.")
 }
 
 
@@ -127,7 +127,7 @@ exports.signupPlayer = async (req, res) => {
         }
     } catch (error) {
         res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }
@@ -216,7 +216,7 @@ exports.signupAgent = async (req, res) => {
         }
     } catch (error) {
         res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }
@@ -261,7 +261,7 @@ exports.resendOTP = async (req, res) => {
         })
     } catch (error) {
         res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }
@@ -329,7 +329,7 @@ exports.verify = async (req, res) => {
 
     } catch (error) {
         return res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }
@@ -372,7 +372,7 @@ exports.logIn = async (req, res) => {
 
         if (!checkPassword) {
             return res.status(400).json({
-                error: "Incorrect password."
+                error: "Incorrect password. Try again"
             })
         }
 
@@ -396,7 +396,7 @@ exports.logIn = async (req, res) => {
         })
     } catch (error) {
         res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }
@@ -440,7 +440,7 @@ exports.logOut = async (req, res) => {
         })
     } catch (error) {
         res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }
@@ -486,10 +486,12 @@ exports.forgotPassword = async (req, res) => {
         const html = resetFunc(userName, verificationLink, otp, Email)
         await sendEmail({ email, subject, html })
 
-        return res.redirect(`https://pronext.onrender.com/recover/code/${user._id}`)
+        return res.status(200).json({
+            message: "An otp has been sent to your email"
+        })
     } catch (error) {
         return res.status(500).json({ 
-            error: error.message 
+            error: 'Internal server error' 
         })
     }
 }
@@ -536,7 +538,7 @@ exports.resendRecoveryCode = async (req, res) => {
         })
     } catch (error) {
         res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }
@@ -574,11 +576,12 @@ exports.resetCode = async (req, res) => {
         // Delete the OTP record after successful verification
         await OTPModel.findByIdAndDelete(otpRecord._id)
 
-        // Redirect the user to the reset password page
-        return res.redirect(`https://pronext.onrender.com/reset_password/${user._id}`)
+        return res.status(200).json({
+            message: "confirm"
+        })
     } catch (error) {
         return res.status(500).json({
-             error: error.message 
+             error: 'Internal server error' 
         })
     }
 }
@@ -621,7 +624,7 @@ exports.resetPassword = async (req, res) => {
 
     } catch (error) {
         res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }
@@ -670,7 +673,7 @@ exports.changePassword = async (req, res) => {
         })
     } catch (error) {
         res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }
@@ -718,7 +721,7 @@ exports.updateUserName = async (req, res) => {
         })
     } catch (error) {
         res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }
@@ -770,7 +773,7 @@ exports.updateEmail = async (req, res) => {
         })
     } catch (error) {
         res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }
@@ -827,7 +830,7 @@ exports.updateUserProfile = async (req, res) => {
         })
     } catch (error) {
         res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }
@@ -874,7 +877,7 @@ exports.createProfileImg = async (req, res) => {
 
     } catch (error) {
         return res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }
@@ -901,7 +904,7 @@ exports.deleteProfileImg = async (req, res) => {
         res.status(200).json(user.profileImg)
     } catch (error) {
         res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }
@@ -945,7 +948,7 @@ exports.getUsers = async (req, res) => {
 
     } catch (error) {
         res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }
@@ -1025,7 +1028,7 @@ exports.follow = async (req, res) => {
       })
     } catch (error) {
       res.status(500).json({
-        error: error.message
+        error: 'Internal server error'
       })
     }
   }
@@ -1079,7 +1082,7 @@ exports.unfollow = async (req, res) => {
         })
     } catch (error) {
         res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }
@@ -1144,7 +1147,7 @@ exports.getOneFollower = async (req, res) => {
         })
     } catch (error) {
         res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }
@@ -1196,8 +1199,8 @@ exports.getAllFollowers = async (req, res) => {
                 const followedBack = playerFollower
                     ? playerFollower.followers.includes(id)
                     : agentFollower
-                        ? agentFollower.followers.includes(id)
-                        : false
+                    ? agentFollower.followers.includes(id)
+                    : false
 
                 return { followerId, followedBack }
             })
@@ -1216,7 +1219,7 @@ exports.getAllFollowers = async (req, res) => {
         })
     } catch (error) {
         res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }
@@ -1259,7 +1262,7 @@ exports.getOneFollowing = async (req, res) => {
         
     } catch (error) {
         res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }
@@ -1329,7 +1332,7 @@ exports.getAllFollowing = async (req, res) => {
         })
     } catch (error) {
         res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }
@@ -1362,7 +1365,7 @@ exports.deleteAccount = async (req, res) => {
 
     } catch (error) {
         res.status(500).json({
-            error: error.message
+            error: 'Internal server error'
         })
     }
 }

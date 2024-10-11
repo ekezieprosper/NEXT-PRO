@@ -14,7 +14,7 @@ const signUp = (req, res, next) => {
         'any.required': 'Username is required'
       }),
 
-    email: Joi.string().email().required().messages({
+    email: Joi.string().email({ tlds: { allow: false } }).trim().required().messages({
       'string.base': 'Email must be a string',
       'string.empty': 'Email cannot be empty',
       'string.email': 'Invalid email address',
@@ -97,7 +97,7 @@ phoneNumber: Joi.string().allow('')
 
 const forgotValidation = (req, res, next) => {
   const validateforgot = Joi.object({
-    email: Joi.string().email().required().messages({
+    email: Joi.string().email({ tlds: { allow: false } }).trim().required().messages({
       'string.base': 'Email must be a string',
       'string.empty': 'Email cannot be empty',
       'string.email': 'Invalid email address',

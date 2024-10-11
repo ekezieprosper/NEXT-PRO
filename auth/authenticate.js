@@ -63,7 +63,7 @@ const authenticate = async (req, res, next) => {
     next()
   } catch (error) {
     res.status(500).json({
-      error: error.message,
+      error: 'Internal server error'
     })
   }
 }

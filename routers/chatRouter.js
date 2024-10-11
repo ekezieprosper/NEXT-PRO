@@ -1,13 +1,32 @@
 const router = require("express").Router()
 const {
-    reactOnChat, copyMessage, editMessage, startChat, getChat, sendMessage, getChatmessage, exitGroup, createGroupChat,
-    sendVoiceNote, createGroupImage, forwardMessage, blockChat, unblockChat, deleteChat, addMembers,editAdmin,deleteMessage,
-    removeMembers, deleteGroupImg} = require("../controllers/chatController")
+        reactOnChat, 
+        copyMessage, 
+        editMessage, 
+        startChat, 
+        getChat, 
+        sendMessage,
+        getChatmessage, 
+        exitGroup, 
+        createGroupChat,
+        sendVoiceNote, 
+        createGroupImage, 
+        forwardMessage, 
+        blockChat, 
+        unblockChat, 
+        deleteChat, 
+        addMembers,
+        editAdmin,
+        deleteMessage,
+        removeMembers, 
+        deleteGroupImg} = require("../controllers/chatController")
 
 const upload = require("../media/multer")
 const uploader = require("../media/multerFiles")
 const authenticate = require("../auth/authenticate")
 const voiceNote = require("../media/voiceNotes")
+
+
 
 router.post('/start_chat',authenticate, startChat)
 router.post('/group', authenticate, createGroupChat)
